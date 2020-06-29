@@ -323,7 +323,6 @@ class BinaryStream {
 
     set buffer(buffer) {
         this.#buffer = buffer
-        this.#offset = Buffer.byteLength(buffer)
     }
 }
 module.exports = BinaryStream
