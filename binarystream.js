@@ -324,6 +324,12 @@ class BinaryStream {
         return typeof this.#buffer[this.#offset] === 'undefined'
     }
 
+    readRemaining() {
+        let buffer = this.#buffer.slice(this.offset)
+        this.offset = this.#buffer.length
+        return buffer
+    }
+
     reset() {
         this.#buffer = Buffer.alloc(0)
         this.#offset = 0
