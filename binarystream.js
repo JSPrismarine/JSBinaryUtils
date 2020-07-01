@@ -100,7 +100,14 @@ class BinaryStream {
 
     // Reads a 3 byte signed little endian number
     readLTriad() {
-        return this.#buffer.readIntLE(this.addOffset(3), 3)
+        return this.#buffer.readUIntLE(this.addOffset(3), 3)
+    }
+
+    // Reads a 3 byte unsigned little endian number
+    writeLTriad(v) {
+        let buf = Buffer.alloc(3)
+        buf.writeUIntLE(v, 0, 3)
+        this.append(buf)
     }
 
     // Reads a 4 byte signed integer
@@ -313,8 +320,16 @@ class BinaryStream {
         return (this.#offset += v) - v
     }
 
+    feof() {
+        return typeof this.#buffer[this.#offset] === 'undefined'
+    }
+
     get offset() {
         return this.#offset
+    }
+
+    set offset(offset) {
+        this.#offset = offset
     }
 
     get buffer() {
