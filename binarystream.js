@@ -293,19 +293,21 @@ class BinaryStream {
 
     // Writes a 64 bit integer as zigzag-encoded long
     writeVarLong(v) {
-        return this.writeUnsignedVarLong((v << 1) ^ (v >> 63))
+        let bi = BigInt(v)
+        return this.writeUnsignedVarLong((bi << 1n) ^ (bi >> 63n))
     }
 
     // Writes a 64 bit unsigned integer long
     writeUnsignedVarLong(v) {
+        let bi = BigInt(v)
         for (let i = 0; i < 10; i++) {
-            if ((v >> 7) !== 0) {
-                this.writeByte(v | 0x80)
+            if ((bi >> 7n) !== 0n) {
+                this.writeByte(Number((bi | 0x80n)))
             } else {
-                this.writeByte(v & 0x7f)
+                this.writeByte(Number((bi & 0x7fn)))
                 break
             }
-            v >>= 7
+            bi >>= 7n
         }
     }
 
