@@ -94,7 +94,7 @@ class BinaryStream {
     // Writes a 3 byte unsigned big endian number
     writeTriad(v) {
         let buffer = Buffer.alloc(3)
-        buffer.writeUIntBE(v, 0, 3)
+        buffer.writeIntBE(v, 0, 3)
         this.append(buffer)
     }
 
