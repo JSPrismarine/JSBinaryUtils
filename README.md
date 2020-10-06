@@ -1,8 +1,13 @@
 # JSBinaryUtils
-https://www.npmjs.com/package/jsbinaryutils
+https://www.npmjs.com/package/@jsprismarine/jsbinaryutils
 
 ## USE:
-`npm i jsbinaryutils`
+```
+# Yarn
+$ yarn add @jsprismarine/jsbinaryutils
+# NPM
+$ npm i @jsprismarine/jsbinaryutils
+```
 
 ## Sample code
 ```js
