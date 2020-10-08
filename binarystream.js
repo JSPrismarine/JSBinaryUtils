@@ -66,8 +66,9 @@ class BinaryStream {
 
     // Writes a 16 bit signed / unsigned big endian number
     writeShort(v) {
-        this.writeByte((v >> 8) & 0xff)
-        this.writeByte(v & 0xff) 
+    	let buf = Buffer.alloc(2)
+        buf.writeUInt16BE(v)
+        this.append(buf)
     }
 
     // Reads an unsigned 16 bit little endian number
