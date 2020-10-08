@@ -1,5 +1,3 @@
-import { getMaxListeners, off } from "process";
-
 export default class BinaryStream {
     private buffer: Buffer;
     private offset: number;

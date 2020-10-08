@@ -1,13 +1,17 @@
 {
   "name": "@jsprismarine/binaryutils",
-  "version": "2.0.9",
+  "version": "2.0.0",
   "description": "Basic binary managing written in TypeScript",
-  "main": "binarystream.js",
+  "main": ".dist/binarystream.js",
   "scripts": {
     "test": "jest --passWithNoTests",
     "test:watch": "jest --passWithNoTests --watchAll",
-    "build": "babel src -d dist"
+    "prepublishOnly": "npm run build",
+    "build": "tsc"
   },
+  "files": [
+    "dist/**/*"
+  ],
   "repository": {
     "type": "git",
     "url": "git://github.com/JSPrismarine/JSBinaryUtils.git"
@@ -23,9 +27,8 @@
   },
   "homepage": "https://github.com/JSPrismarine/JSBinaryUtils#readme",
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-preset-latest": "^6.24.1",
-    "jest": "26.5.2"
+    "jest": "26.5.2",
+    "typescript": "^4.0.3"
   },
   "dependencies": {
     "@types/node": "^14.11.5"
