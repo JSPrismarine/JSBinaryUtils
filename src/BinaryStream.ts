@@ -171,7 +171,7 @@ export default class BinaryStream {
      * Reads a 4 bytes signed little-endian number.
      */
     public readInt(): number {
-        return this.buffer.readIntLE(this.addOffset(4), 4);
+        return this.buffer.readInt32BE(this.addOffset(4));
     }
 
     /**
@@ -182,9 +182,9 @@ export default class BinaryStream {
     public writeInt(v: number): void {
         let buf = Buffer.alloc(4);
         try {
-            buf.writeUInt32LE(v);
+            buf.writeUInt32BE(v);
         } catch {
-            buf.writeInt32LE(v);
+            buf.writeInt32BE(v);
         }
         this.write(buf);
     }
@@ -412,6 +412,7 @@ export default class BinaryStream {
      * @param v 
      */
     public writeVarLong(v: bigint) {
+        v = typeof v !== "bigint" ? v = BigInt(v) : v;
         return this.writeUnsignedVarLong((v << 1n) ^ (v >> 63n));
     }
     
@@ -421,6 +422,7 @@ export default class BinaryStream {
      * @param v 
      */
     public writeUnsignedVarLong(v: bigint) {
+        v = typeof v !== "bigint" ? v = BigInt(v) : v;
         for (let i = 0; i < 10; i++) {
             if ((v >> 7n) !== 0n) {
                 this.writeByte(Number((v | 0x80n)));
