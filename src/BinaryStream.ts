@@ -23,7 +23,7 @@ export default class BinaryStream {
      * @param length 
      */
     public read(length: number) {
-        return this.buffer.slice(this.offset, this.addOffset(length));
+        return this.buffer.slice(this.offset, this.addOffset(length, true));
     }
 
     /**
