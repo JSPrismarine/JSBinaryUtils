@@ -12,7 +12,7 @@ export default class BinaryStream {
      * 
      * @param buffer
      */
-    public write(buffer: Buffer): void {
+    public append(buffer: Buffer): void {
         this.buffer = Buffer.concat([this.buffer, buffer]);
         this.addOffset(Buffer.byteLength(buffer));
     }
@@ -46,7 +46,7 @@ export default class BinaryStream {
      * @param v 
      */
     public writeByte(v: number): void {
-        this.write(Buffer.from([v & 0xFF]));
+        this.append(Buffer.from([v & 0xFF]));
     }
 
     /**
@@ -91,7 +91,7 @@ export default class BinaryStream {
         } catch {
             buf.writeInt16BE(v);
         }
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -120,7 +120,7 @@ export default class BinaryStream {
         } catch {
             buf.writeInt16LE(v);
         }
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -142,7 +142,7 @@ export default class BinaryStream {
         } catch {
             buf.writeIntBE(v, 0, 3);
         }
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -164,7 +164,7 @@ export default class BinaryStream {
         } catch {
             buf.writeIntLE(v, 0, 3);
         }
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -186,7 +186,7 @@ export default class BinaryStream {
         } catch {
             buf.writeInt32BE(v);
         }
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -204,7 +204,7 @@ export default class BinaryStream {
     public writeLInt(v: number): void {
         let buf = Buffer.alloc(4);
         buf.writeInt32LE(v);
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -222,7 +222,7 @@ export default class BinaryStream {
     public writeFloat(v: number): void {
         let buf = Buffer.alloc(4);
         buf.writeFloatBE(v);
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -240,7 +240,7 @@ export default class BinaryStream {
     public writeLFloat(v: number): void {
         let buf = Buffer.alloc(4);
         buf.writeFloatLE(v);
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -258,7 +258,7 @@ export default class BinaryStream {
     public writeDouble(v: number): void {
         let buf = Buffer.alloc(8);
         buf.writeDoubleBE(v);
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -276,7 +276,7 @@ export default class BinaryStream {
     public writeLDouble(v: number): void {
         let buf = Buffer.alloc(8);
         buf.writeDoubleLE(v);
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -294,7 +294,7 @@ export default class BinaryStream {
     public writeLong(v: bigint): void {
         let buf = Buffer.alloc(8);
         buf.writeBigInt64BE(v);
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -312,7 +312,7 @@ export default class BinaryStream {
     public writeLLong(v: bigint): void {
         let buf = Buffer.alloc(8);
         buf.writeBigInt64LE(v);
-        this.write(buf);
+        this.append(buf);
     }
 
     /**
@@ -368,13 +368,13 @@ export default class BinaryStream {
                 str.writeByte(v | 0x80);
             } else {
                 str.writeByte(v & 0x7f);
-                this.write(str.getBuffer());
+                this.append(str.getBuffer());
                 return;
             }
             v >>= 7;
         }
 
-        this.write(str.getBuffer());
+        this.append(str.getBuffer());
     }
 
     /**
