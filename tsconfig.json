@@ -15,6 +15,7 @@
         "isolatedModules": false,
         "esModuleInterop": true,
         "resolveJsonModule": true,
+        "declaration": true,
         "allowSyntheticDefaultImports": true
     },
     "include": [

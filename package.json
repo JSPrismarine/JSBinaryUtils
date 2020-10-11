@@ -1,8 +1,9 @@
 {
   "name": "@jsprismarine/jsbinaryutils",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Basic binary managing written in TypeScript",
   "main": "./dist/binarystream.js",
+  "types": "./dist/binarystream.d.ts",
   "scripts": {
     "test": "jest --passWithNoTests",
     "test:watch": "jest --passWithNoTests --watchAll",
