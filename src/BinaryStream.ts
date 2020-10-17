@@ -1,3 +1,5 @@
+import { listenerCount, off } from "process";
+
 export default class BinaryStream {
     private buffer: Buffer;
     private offset: number;
@@ -475,5 +477,44 @@ export default class BinaryStream {
 
     public getOffset(): number {
         return this.offset;
+    }
+
+    public log(): void {
+        let length = this.buffer.length;
+        let offset = this.offset;
+
+        // https://github.com/bma73/hexdump-nodejs/blob/master/index.js
+        let fillup = (val: string, count: number, fillWith: string) => {
+            let l = count - val.length;
+            let ret = "";
+            while (--l > -1) {
+                ret += val;
+            }
+            return ret + val;
+        }, hexdump = () => {
+            let out = fillup("Offset", 8, " ") + "  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n";
+            let row = "";
+            for (let i = 0; i < length; i += 16) {
+                row += fillup(offset.toString(16).toUpperCase(), 8, "0") + "  ";
+                let n = Math.min(16, length - offset);
+                let string = "";
+                for (let j = 0; j < 16; j++) {
+                    if (j < n) {
+                        let value = this.buffer.readUInt8(offset);
+                        string += value >= 32 ? String.fromCharCode(value) : ".";
+                        row += fillup(value.toString(16).toUpperCase(), 2, "0") + " ";
+                        offset++;
+                    } else {
+                        row += "  ";
+                        string += " ";
+                    }
+                }
+                row += " " + string + "\n";
+            }
+            out += row;
+            return out;
+        }
+
+        return console.log(hexdump);
     }
 }
