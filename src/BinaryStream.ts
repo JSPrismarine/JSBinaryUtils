@@ -488,7 +488,7 @@ export default class BinaryStream {
             let l = count - val.length;
             let ret = "";
             while (--l > -1) {
-                ret += val;
+                ret += fillWith;
             }
             return ret + val;
         }, hexdump = () => {
@@ -515,6 +515,6 @@ export default class BinaryStream {
             return out;
         }
 
-        return console.log(hexdump);
+        return console.log(hexdump());
     }
 }
