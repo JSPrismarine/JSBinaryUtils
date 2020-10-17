@@ -11,7 +11,7 @@ $ npm i @jsprismarine/jsbinaryutils
 
 ## Sample code
 ```js
-const BinaryStream = require('jsbinaryutils')
+const BinaryStream = require('@jsprismarine/jsbinaryutils').default
 
 let stream = new BinaryStream()
 
