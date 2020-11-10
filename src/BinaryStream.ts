@@ -63,7 +63,7 @@ export default class BinaryStream {
      * 
      * @param v 
      */
-    public writeBool(v: number): void {
+    public writeBool(v: boolean): void {
         this.writeByte(v ? 1 : 0);
     }
 
