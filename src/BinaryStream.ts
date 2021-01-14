@@ -1,4 +1,4 @@
-import { listenerCount, off } from "process";
+import { listenerCount, off } from 'process';
 
 export default class BinaryStream {
     private buffer: Buffer;
@@ -8,10 +8,10 @@ export default class BinaryStream {
         this.buffer = buffer;
         this.offset = offset;
     }
-    
+
     /**
      * Appends a buffer to the binary one.
-     * 
+     *
      * @param buffer
      */
     public append(buffer: Buffer): void {
@@ -21,8 +21,8 @@ export default class BinaryStream {
 
     /**
      * Reads a slice of buffer by the given length.
-     * 
-     * @param length 
+     *
+     * @param length
      */
     public read(length: number) {
         return this.buffer.slice(this.offset, this.addOffset(length, true));
@@ -44,11 +44,11 @@ export default class BinaryStream {
 
     /**
      * Writes an unsigned / signed byte.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeByte(v: number): void {
-        this.append(Buffer.from([v & 0xFF]));
+        this.append(Buffer.from([v & 0xff]));
     }
 
     /**
@@ -60,8 +60,8 @@ export default class BinaryStream {
 
     /**
      * Writes a boolean byte.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeBool(v: boolean): void {
         this.writeByte(v ? 1 : 0);
@@ -83,8 +83,8 @@ export default class BinaryStream {
 
     /**
      * Writes a 16 bit signed/unsigned big-endian number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeShort(v: number): void {
         let buf = Buffer.alloc(2);
@@ -112,8 +112,8 @@ export default class BinaryStream {
 
     /**
      * Writes a 16 bit signed/unsigned little-endian number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeLShort(v: number): void {
         let buf = Buffer.alloc(2);
@@ -134,8 +134,8 @@ export default class BinaryStream {
 
     /**
      * Writes a 3 bytes big-endian number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeTriad(v: number): void {
         let buf = Buffer.alloc(3);
@@ -156,8 +156,8 @@ export default class BinaryStream {
 
     /**
      * Writes a 3 bytes little-endian number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeLTriad(v: number): void {
         let buf = Buffer.alloc(3);
@@ -170,7 +170,7 @@ export default class BinaryStream {
     }
 
     /**
-     * Reads a 4 bytes signed little-endian number.
+     * Reads a 4 bytes signed big-endian number.
      */
     public readInt(): number {
         return this.buffer.readInt32BE(this.addOffset(4));
@@ -178,8 +178,8 @@ export default class BinaryStream {
 
     /**
      * Writes a 4 bytes number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeInt(v: number): void {
         let buf = Buffer.alloc(4);
@@ -200,7 +200,7 @@ export default class BinaryStream {
 
     /**
      * Writes a 4 bytes signed little-endian number.
-     * 
+     *
      * @param v
      */
     public writeLInt(v: number): void {
@@ -218,8 +218,8 @@ export default class BinaryStream {
 
     /**
      * Writes a 4 bytes floating-point number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeFloat(v: number): void {
         let buf = Buffer.alloc(4);
@@ -236,8 +236,8 @@ export default class BinaryStream {
 
     /**
      * Writes a 4 bytes little-endian floating-point number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeLFloat(v: number): void {
         let buf = Buffer.alloc(4);
@@ -254,8 +254,8 @@ export default class BinaryStream {
 
     /**
      * Writes a 8 bytes floating-point number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeDouble(v: number): void {
         let buf = Buffer.alloc(8);
@@ -272,8 +272,8 @@ export default class BinaryStream {
 
     /**
      * Reads a 8 bytes little-endian floating-point number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeLDouble(v: number): void {
         let buf = Buffer.alloc(8);
@@ -290,8 +290,8 @@ export default class BinaryStream {
 
     /**
      * Writes a 8 bytes number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeLong(v: bigint): void {
         let buf = Buffer.alloc(8);
@@ -308,8 +308,8 @@ export default class BinaryStream {
 
     /**
      * Writes a 8 bytes little-endian number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeLLong(v: bigint): void {
         let buf = Buffer.alloc(8);
@@ -332,41 +332,41 @@ export default class BinaryStream {
     public readUnsignedVarInt(): number {
         let value = 0;
         for (let i = 0; i <= 28; i += 7) {
-            if (typeof this.buffer[this.offset] === "undefined") {
-                throw new Error("No bytes left in buffer");
+            if (typeof this.buffer[this.offset] === 'undefined') {
+                throw new Error('No bytes left in buffer');
             }
             let b = this.readByte();
-            value |= ((b & 0x7f) << i);
+            value |= (b & 0x7f) << i;
 
             if ((b & 0x80) === 0) {
                 return value;
             }
         }
 
-        throw new Error("VarInt did not terminate after 5 bytes!");
+        throw new Error('VarInt did not terminate after 5 bytes!');
     }
 
     /**
      * Writes a 32 bit zigzag-encoded number.
-     * 
+     *
      * @param v
      */
     public writeVarInt(v: number): void {
-        v = (v << 32 >> 32);
+        v = (v << 32) >> 32;
         return this.writeUnsignedVarInt((v << 1) ^ (v >> 31));
     }
 
     /**
      * Writes a 32 bit unsigned number with variable-length.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeUnsignedVarInt(v: number): void {
         let str = new BinaryStream();
-        v &= 0xFFFFFFFF;
+        v &= 0xffffffff;
 
         for (let i = 0; i < 5; i++) {
-            if ((v >> 7) !== 0) {
+            if (v >> 7 !== 0) {
                 str.writeByte(v | 0x80);
             } else {
                 str.writeByte(v & 0x7f);
@@ -387,49 +387,49 @@ export default class BinaryStream {
         let tmp = (((raw << 63n) >> 63n) ^ raw) >> 1n;
         return tmp ^ (raw & (1n << 63n));
     }
-    
+
     /**
      * Reads a 64 bit unsigned variable-length number.
      */
     public readUnsignedVarLong(): bigint {
         let value = 0;
         for (let i = 0; i <= 63; i += 7) {
-            if (typeof this.buffer[this.offset] === "undefined") {
-                throw new Error("No bytes left in buffer");
+            if (typeof this.buffer[this.offset] === 'undefined') {
+                throw new Error('No bytes left in buffer');
             }
             let b = this.readByte();
-            value |= ((b & 0x7f) << i);
-    
+            value |= (b & 0x7f) << i;
+
             if ((b & 0x80) === 0) {
                 return BigInt(value);
             }
         }
-            
-        throw new Error("VarLong did not terminate after 10 bytes!");
+
+        throw new Error('VarLong did not terminate after 10 bytes!');
     }
-    
+
     /**
      * Writes a 64 bit unsigned zigzag-encoded number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeVarLong(v: bigint) {
-        v = typeof v !== "bigint" ? v = BigInt(v) : v;
+        v = typeof v !== 'bigint' ? (v = BigInt(v)) : v;
         return this.writeUnsignedVarLong((v << 1n) ^ (v >> 63n));
     }
-    
+
     /**
      * Writes a 64 bit unsigned variable-length number.
-     * 
-     * @param v 
+     *
+     * @param v
      */
     public writeUnsignedVarLong(v: bigint) {
-        v = typeof v !== "bigint" ? v = BigInt(v) : v;
+        v = typeof v !== 'bigint' ? (v = BigInt(v)) : v;
         for (let i = 0; i < 10; i++) {
-            if ((v >> 7n) !== 0n) {
-                this.writeByte(Number((v | 0x80n)));
+            if (v >> 7n !== 0n) {
+                this.writeByte(Number(v | 0x80n));
             } else {
-                this.writeByte(Number((v & 0x7Fn)));
+                this.writeByte(Number(v & 0x7fn));
                 break;
             }
             v >>= 7n;
@@ -439,19 +439,21 @@ export default class BinaryStream {
     /**
      * Increases the offset by the given length,
      * retval is used to skip bytes directly.
-     * 
-     * @param length 
-     * @param retval 
+     *
+     * @param length
+     * @param retval
      */
     public addOffset(length: number, retval: boolean = false): number {
-        return retval ? this.offset += length : (this.offset += length) - length;
+        return retval
+            ? (this.offset += length)
+            : (this.offset += length) - length;
     }
 
     /**
      * Returns whatever or not the offset is at end of line.
      */
     public feof(): boolean {
-        return typeof this.buffer[this.offset] === "undefined";
+        return typeof this.buffer[this.offset] === 'undefined';
     }
 
     /**
@@ -473,10 +475,14 @@ export default class BinaryStream {
 
     public getBuffer(): Buffer {
         return this.buffer;
-    } 
+    }
 
     public getOffset(): number {
         return this.offset;
+    }
+
+    public setOffset(offset: number) {
+        this.offset = offset;
     }
 
     public log(): void {
@@ -485,35 +491,46 @@ export default class BinaryStream {
 
         // https://github.com/bma73/hexdump-nodejs/blob/master/index.js
         let fillup = (val: string, count: number, fillWith: string) => {
-            let l = count - val.length;
-            let ret = "";
-            while (--l > -1) {
-                ret += fillWith;
-            }
-            return ret + val;
-        }, hexdump = () => {
-            let out = fillup("Offset", 8, " ") + "  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n";
-            let row = "";
-            for (let i = 0; i < length; i += 16) {
-                row += fillup(offset.toString(16).toUpperCase(), 8, "0") + "  ";
-                let n = Math.min(16, length - offset);
-                let string = "";
-                for (let j = 0; j < 16; j++) {
-                    if (j < n) {
-                        let value = this.buffer.readUInt8(offset);
-                        string += value >= 32 ? String.fromCharCode(value) : ".";
-                        row += fillup(value.toString(16).toUpperCase(), 2, "0") + " ";
-                        offset++;
-                    } else {
-                        row += "  ";
-                        string += " ";
-                    }
+                let l = count - val.length;
+                let ret = '';
+                while (--l > -1) {
+                    ret += fillWith;
                 }
-                row += " " + string + "\n";
-            }
-            out += row;
-            return out;
-        }
+                return ret + val;
+            },
+            hexdump = () => {
+                let out =
+                    fillup('Offset', 8, ' ') +
+                    '  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n';
+                let row = '';
+                for (let i = 0; i < length; i += 16) {
+                    row +=
+                        fillup(offset.toString(16).toUpperCase(), 8, '0') +
+                        '  ';
+                    let n = Math.min(16, length - offset);
+                    let string = '';
+                    for (let j = 0; j < 16; j++) {
+                        if (j < n) {
+                            let value = this.buffer.readUInt8(offset);
+                            string +=
+                                value >= 32 ? String.fromCharCode(value) : '.';
+                            row +=
+                                fillup(
+                                    value.toString(16).toUpperCase(),
+                                    2,
+                                    '0'
+                                ) + ' ';
+                            offset++;
+                        } else {
+                            row += '  ';
+                            string += ' ';
+                        }
+                    }
+                    row += ' ' + string + '\n';
+                }
+                out += row;
+                return out;
+            };
 
         return console.log(hexdump());
     }
