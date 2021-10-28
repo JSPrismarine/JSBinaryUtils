@@ -2,12 +2,7 @@
     "compilerOptions": {
         "outDir": "dist",
         "target": "es2020",
-        "lib": [
-            "dom",
-            "dom.iterable",
-            "es2015",
-            "esnext"
-        ],
+        "lib": ["dom", "dom.iterable", "es2015", "esnext"],
         "module": "commonjs",
         "allowJs": true,
         "strict": true,
@@ -18,12 +13,6 @@
         "declaration": true,
         "allowSyntheticDefaultImports": true
     },
-    "include": [
-        "./src/BinaryStream.ts",
-        "./src/types"
-    ],
-    "typeRoots": [
-        "node_modules/@types",
-        "./src/types"
-    ]
+    "include": ["./src/BinaryStream.ts", "./src/types"],
+    "typeRoots": ["node_modules/@types", "./src/types"]
 }

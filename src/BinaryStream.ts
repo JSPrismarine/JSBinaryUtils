@@ -1,336 +1,560 @@
+import assert from 'assert';
+
 export default class BinaryStream {
-    private buffer: Buffer;
-    private offset: number;
+    private binary: Array<number> = [];
+    private buffer: Buffer | null = null;
+    private readIndex: number;
+    private writeIndex = 0;
 
-    constructor(buffer: Buffer = Buffer.allocUnsafe(0), offset: number = 0) {
-        this.buffer = buffer;
-        this.offset = offset;
-    }
-
-    /**
-     * Appends a buffer to the binary one.
-     *
-     * @param buffer
-     */
-    public append(buffer: Buffer): void {
-        this.buffer = Buffer.concat([this.buffer, buffer]);
-        this.addOffset(Buffer.byteLength(buffer));
+    public constructor(buffer?: Buffer, offset: number = 0) {
+        this.buffer = buffer ?? null; // Keep this instance for reading
+        this.readIndex = offset;
     }
 
     /**
      * Reads a slice of buffer by the given length.
-     *
-     * @param length
+     * @param len
      */
-    public read(length: number) {
-        return this.buffer.slice(this.offset, this.addOffset(length, true));
+    public read(len: number): Buffer {
+        this.doReadAssertions(len);
+        return this.buffer!.slice(this.readIndex, (this.readIndex += len));
     }
 
     /**
-     * Reads an unsigned byte (0 - 255).
+     * Appends a buffer to the main buffer.
+     *
+     * @param buf
+     */
+    public write(buf: Buffer): void {
+        this.binary.push(...buf);
+        this.writeIndex += buf.byteLength;
+    }
+
+    /**
+     * Reads an unsigned byte (0 to 255).
      */
     public readByte(): number {
-        return this.buffer.readUInt8(this.addOffset(1));
+        this.doReadAssertions(1);
+        return this.buffer!.readUInt8(this.readIndex++);
     }
 
     /**
-     * Reads a signed byte (-128 - 127).
-     */
-    public readSignedByte(): number {
-        return this.buffer.readInt8(this.addOffset(1));
-    }
-
-    /**
-     * Writes an unsigned / signed byte.
-     *
+     * Writes an unsigned byte (0 to 255).
      * @param v
      */
     public writeByte(v: number): void {
-        this.append(Buffer.from([v & 0xff]));
+        v &= 0xff;
+        this.binary[this.writeIndex++] = v;
     }
 
     /**
-     * Reads a boolean byte.
+     * Reads a signed byte (-128 to 127).
+     * @returns {number}
      */
-    public readBool(): boolean {
-        return this.readByte() !== 0;
+    public readSignedByte(): number {
+        this.doReadAssertions(1);
+        return this.buffer!.readInt8(this.readIndex++);
     }
 
     /**
-     * Writes a boolean byte.
-     *
+     * Writes a signed byte (-128 to 127).
      * @param v
      */
-    public writeBool(v: boolean): void {
-        this.writeByte(v ? 1 : 0);
+    public writeSignedByte(v: number): void {
+        if (v < 0) v = 0xff + v + 1;
+        this.binary[this.writeIndex++] = v & 0xff;
     }
 
     /**
-     * Reads a 16 bit unsigned big-endian number.
+     * Reads a boolean (true or false).
+     * @returns {boolean}
+     */
+    public readBoolean(): boolean {
+        this.doReadAssertions(1);
+        return !!this.readByte();
+    }
+
+    /**
+     * Writes a boolean (true or false).
+     * @param v
+     */
+    public writeBoolean(v: boolean): void {
+        this.writeByte(+v);
+    }
+
+    /**
+     * Reads a 16 bit (2 bytes) signed big-endian number.
+     * @returns {number}
      */
     public readShort(): number {
-        return this.buffer.readUInt16BE(this.addOffset(2));
+        this.doReadAssertions(2);
+        return this.buffer!.readInt16BE(this.addOffset(2));
     }
 
     /**
-     * Reads a 16 bit signed big-endian number.
-     */
-    public readSignedShort(): number {
-        return this.buffer.readInt16BE(this.addOffset(2));
-    }
-
-    /**
-     * Writes a 16 bit signed/unsigned big-endian number.
-     *
+     * Writes a 16 bit (2 bytes) signed big-endian number.
      * @param v
      */
     public writeShort(v: number): void {
-        let buf = Buffer.allocUnsafe(2);
-        try {
-            buf.writeUInt16BE(v);
-        } catch {
-            buf.writeInt16BE(v);
-        }
-        this.append(buf);
+        this.doWriteAssertions(v, -32_768, 32_767);
+        this.writeByte(v >> 8);
+        this.writeByte(v);
     }
 
     /**
-     * Reads a 16 bit unsigned little-endian number.
+     * Reads a 16 bit (2 bytes) signed little-endian number.
+     * @returns {number}
      */
-    public readLShort(): number {
-        return this.buffer.readUInt16LE(this.addOffset(2));
+    public readShortLE(): number {
+        this.doReadAssertions(2);
+        return this.buffer!.readInt16LE(this.addOffset(2));
     }
 
     /**
-     * Reads a 16 bit signed little-endian number.
-     */
-    public readSignedLShort(): number {
-        return this.buffer.readInt16LE(this.addOffset(2));
-    }
-
-    /**
-     * Writes a 16 bit signed/unsigned little-endian number.
-     *
+     * Writes a 16 bit (2 bytes) signed big-endian number.
      * @param v
      */
-    public writeLShort(v: number): void {
-        let buf = Buffer.allocUnsafe(2);
-        try {
-            buf.writeUInt16LE(v);
-        } catch {
-            buf.writeInt16LE(v);
-        }
-        this.append(buf);
+    public writeShortLE(v: number): void {
+        this.doWriteAssertions(v, -32_768, 32_767);
+        this.writeByte(v);
+        this.writeByte(v >> 8);
     }
 
     /**
-     * Reads a 3 bytes unsigned big-endian number.
+     * Reads a 16 bit (2 bytes) unsigned big-endian number.
+     * @returns {number}
+     */
+    public readUnsignedShort(): number {
+        this.doReadAssertions(2);
+        return this.buffer!.readUInt16BE(this.addOffset(2));
+    }
+
+    /**
+     * Writes a 16 bit (2 bytes) unsigned big-endian number.
+     * @param v
+     */
+    public writeUnsignedShort(v: number): void {
+        this.doWriteAssertions(v, 0, 65_535);
+        this.writeByte(v >>> 8);
+        this.writeByte(v);
+    }
+
+    /**
+     * Reads a 16 bit (2 bytes) unsigned little-endian number.
+     * @returns {number}
+     */
+    public readUnsignedShortLE(): number {
+        this.doReadAssertions(2);
+        return this.buffer!.readUInt16LE(this.addOffset(2));
+    }
+
+    /**
+     * Writes a 16 bit (2 bytes) unsigned little-endian number.
+     * @param v
+     */
+    public writeUnsignedShortLE(v: number): void {
+        this.doWriteAssertions(v, 0, 65_535);
+        this.writeByte(v);
+        this.writeByte(v >>> 8);
+    }
+
+    /**
+     * Reads a 24 bit (3 bytes) signed big-endian number.
+     * @returns {number}
      */
     public readTriad(): number {
-        return this.buffer.readUIntBE(this.addOffset(3), 3);
+        this.doReadAssertions(3);
+        return this.buffer!.readIntBE(this.addOffset(3), 3);
     }
 
     /**
-     * Writes a 3 bytes big-endian number.
-     *
+     * Writes a 24 bit (3 bytes) signed big-endian number.
      * @param v
      */
     public writeTriad(v: number): void {
-        let buf = Buffer.allocUnsafe(3);
-        try {
-            buf.writeUIntBE(v, 0, 3);
-        } catch {
-            buf.writeIntBE(v, 0, 3);
-        }
-        this.append(buf);
+        this.doWriteAssertions(v, -8_388_608, 8_388_607);
+        this.writeByte((v & 0xff0000) >> 16); // msb
+        this.writeByte((v & 0x00ff00) >> 8); // mib
+        this.writeByte(v & 0x0000ff); // lsb
     }
 
     /**
-     * Reads a 3 bytes little-endian number.
+     * Reads a 24 bit (3 bytes) little-endian number.
+     * @returns {number}
      */
-    public readLTriad(): number {
-        return this.buffer.readUIntLE(this.addOffset(3), 3);
+    public readTriadLE(): number {
+        this.doReadAssertions(3);
+        return this.buffer!.readIntLE(this.addOffset(3), 3);
     }
 
     /**
-     * Writes a 3 bytes little-endian number.
-     *
+     * Writes a 24 bit (3 bytes) signed little-endian number.
      * @param v
      */
-    public writeLTriad(v: number): void {
-        let buf = Buffer.allocUnsafe(3);
-        try {
-            buf.writeUIntLE(v, 0, 3);
-        } catch {
-            buf.writeIntLE(v, 0, 3);
-        }
-        this.append(buf);
+    public writeTriadLE(v: number): void {
+        this.doWriteAssertions(v, -8_388_608, 8_388_607);
+        this.writeByte(v & 0x0000ff);
+        this.writeByte((v & 0x00ff00) >> 8);
+        this.writeByte((v & 0xff0000) >> 16);
     }
 
     /**
-     * Reads a 4 bytes signed big-endian number.
+     * Reads a 24 bit (3 bytes) unsigned big-endian number.
+     * @returns {number}
+     */
+    public readUnsignedTriad(): number {
+        this.doReadAssertions(3);
+        return this.buffer!.readUIntBE(this.addOffset(3), 3);
+    }
+
+    /**
+     * Writes a 24 bit (3 bytes) unsigned big-endian number.
+     * @param v
+     */
+    public writeUnsignedTriad(v: number): void {
+        this.doWriteAssertions(v, 0, 16_777_215);
+        this.writeByte((v & 0xff0000) >>> 16); // msb
+        this.writeByte((v & 0x00ff00) >>> 8); // mib
+        this.writeByte(v & 0x0000ff); // lsb
+    }
+
+    /**
+     * Reads a 24 bit (3 bytes) unsigned little-endian number.
+     * @returns {number}
+     */
+    public readUnsignedTriadLE(): number {
+        this.doReadAssertions(3);
+        return this.buffer!.readUIntLE(this.addOffset(3), 3);
+    }
+
+    /**
+     * Writes a 24 bit (3 bytes) unsigned little-endian number.
+     * @param v
+     */
+    public writeUnsignedTriadLE(v: number): void {
+        this.doWriteAssertions(v, 0, 16_777_215);
+        this.writeByte(v & 0x0000ff);
+        this.writeByte((v & 0x00ff00) >>> 8);
+        this.writeByte((v & 0xff0000) >>> 16);
+    }
+
+    /**
+     * Reads a 32 bit (4 bytes) big-endian signed number.
      */
     public readInt(): number {
-        return this.buffer.readInt32BE(this.addOffset(4));
+        this.doReadAssertions(4);
+        return this.buffer!.readInt32BE(this.addOffset(4));
     }
 
     /**
-     * Writes a 4 bytes number.
-     *
+     * Writes a 32 bit (4 bytes) big-endian signed number.
      * @param v
      */
     public writeInt(v: number): void {
-        let buf = Buffer.allocUnsafe(4);
-        try {
-            buf.writeUInt32BE(v);
-        } catch {
-            buf.writeInt32BE(v);
-        }
-        this.append(buf);
+        if (v < 0) v = v & (0xffffffff + v + 1);
+        this.doWriteAssertions(v, -2_147_483_648, 2_147_483_647);
+        this.writeByte(v >> 24);
+        this.writeByte(v >> 16);
+        this.writeByte(v >> 8);
+        this.writeByte(v);
     }
 
     /**
-     * Reads a 4 bytes signed little-endian number.
+     * Reads a 32 bit (4 bytes) signed number.
      */
-    public readLInt(): number {
-        return this.buffer.readIntLE(this.addOffset(4), 4);
+    public readIntLE(): number {
+        this.doReadAssertions(4);
+        return this.buffer!.readIntLE(this.addOffset(4), 4);
     }
 
     /**
-     * Writes a 4 bytes signed little-endian number.
-     *
+     * Writes a 32 bit (4 bytes) little-endian signed number.
      * @param v
      */
-    public writeLInt(v: number): void {
-        let buf = Buffer.allocUnsafe(4);
-        buf.writeInt32LE(v);
-        this.append(buf);
+    public writeIntLE(v: number) {
+        if (v < 0) v = v & (0xffffffff + v + 1);
+        this.doWriteAssertions(v, -2_147_483_648, 2_147_483_647);
+        this.writeByte(v);
+        this.writeByte(v >> 8);
+        this.writeByte(v >> 16);
+        this.writeByte(v >> 24);
     }
 
     /**
-     * Reads a 4 bytes floating-point number.
+     * Reads a 32 bit (4 bytes) big-endian unsigned number.
+     * @returns {number}
+     */
+    public readUnsignedInt(): number {
+        this.doReadAssertions(4);
+        return this.buffer!.readUInt32BE(this.addOffset(4));
+    }
+
+    /**
+     * Writes a 32 bit (4 bytes) big-endian unsigned number.
+     * @param v
+     */
+    public writeUnsignedInt(v: number): void {
+        this.doWriteAssertions(v, 0, 4_294_967_295);
+        this.writeByte(v >>> 24);
+        this.writeByte(v >>> 16);
+        this.writeByte(v >>> 8);
+        this.writeByte(v);
+    }
+
+    /**
+     * Reads a 32 bit (4 bytes) little-endian unsigned number.
+     * @returns {number}
+     */
+    public readUnsignedIntLE(): number {
+        this.doReadAssertions(4);
+        return this.buffer!.readUInt32LE(this.addOffset(4));
+    }
+
+    /**
+     * Writes a 32 bit (4 bytes) little-endian unsigned number.
+     * @param v
+     */
+    public writeUnsignedIntLE(v: number): void {
+        this.doWriteAssertions(v, 0, 4_294_967_295);
+        this.writeByte(v);
+        this.writeByte(v >>> 8);
+        this.writeByte(v >>> 16);
+        this.writeByte(v >>> 24);
+    }
+
+    /**
+     * Returns a 32 bit (4 bytes) big-endian flating point number.
+     * @returns {number}
      */
     public readFloat(): number {
-        return this.buffer.readFloatBE(this.addOffset(4));
+        this.doReadAssertions(4);
+        return this.buffer!.readFloatBE(this.addOffset(4));
     }
 
     /**
-     * Writes a 4 bytes floating-point number.
-     *
+     * Writes a 32 bit (4 bytes) big-endian floating point number.
      * @param v
      */
     public writeFloat(v: number): void {
-        let buf = Buffer.allocUnsafe(4);
+        // TODO: IEEE754
+        this.doWriteAssertions(
+            v,
+            -3.4028234663852886e38,
+            +3.4028234663852886e38
+        );
+        const buf = Buffer.allocUnsafe(4);
         buf.writeFloatBE(v);
-        this.append(buf);
+        this.write(buf);
     }
 
     /**
-     * Reads a 4 bytes little-endian floating-point number.
+     * Returns a 32 bit (4 bytes) big-endian flating point number.
+     * @returns {number}
      */
-    public readLFloat(): number {
-        return this.buffer.readFloatLE(this.addOffset(4));
+    public readFloatLE(): number {
+        this.doReadAssertions(4);
+        return this.buffer!.readFloatLE(this.addOffset(4));
     }
 
     /**
-     * Writes a 4 bytes little-endian floating-point number.
-     *
+     * Writes a 32 bit (4 bytes) little-endian floating point number.
      * @param v
      */
-    public writeLFloat(v: number): void {
-        let buf = Buffer.allocUnsafe(4);
+    public writeFloatLE(v: number): void {
+        // TODO: IEEE754
+        this.doWriteAssertions(
+            v,
+            -3.4028234663852886e38,
+            +3.4028234663852886e38
+        );
+        const buf = Buffer.allocUnsafe(4);
         buf.writeFloatLE(v);
-        this.append(buf);
+        this.write(buf);
     }
 
     /**
-     * Reads a 8 bytes floating-point number.
+     * Returns a 64 bit (8 bytes) big-endian flating point number.
+     * @returns {number}
      */
     public readDouble(): number {
-        return this.buffer.readDoubleBE(this.addOffset(8));
+        this.doReadAssertions(8);
+        return this.buffer!.readDoubleBE(this.addOffset(8));
     }
 
     /**
-     * Writes a 8 bytes floating-point number.
-     *
+     * Writes a 64 bit (8 bytes) big-endian floating point number.
      * @param v
      */
     public writeDouble(v: number): void {
-        let buf = Buffer.allocUnsafe(8);
+        // TODO: IEE765
+        this.doWriteAssertions(
+            v,
+            -1.7976931348623157e308,
+            +1.7976931348623157e308
+        );
+        const buf = Buffer.allocUnsafe(8);
         buf.writeDoubleBE(v);
-        this.append(buf);
+        this.write(buf);
     }
 
     /**
-     * Reads a 8 bytes little-endian floating-point number.
+     * Returns a 64 bit (8 bytes) little-endian flating point number.
+     * @returns {number}
      */
-    public readLDouble(): number {
-        return this.buffer.readDoubleLE(this.addOffset(8));
+    public readDoubleLE(): number {
+        this.doReadAssertions(8);
+        return this.buffer!.readDoubleLE(this.addOffset(8));
     }
 
     /**
-     * Reads a 8 bytes little-endian floating-point number.
-     *
+     * Writes a 64 bit (8 bytes) little-endian floating point number.
      * @param v
      */
-    public writeLDouble(v: number): void {
-        let buf = Buffer.allocUnsafe(8);
-        buf.writeDoubleLE(v);
-        this.append(buf);
+    public writeDoubleLE(v: number): void {
+        // TODO: IEE765
+        this.doWriteAssertions(
+            v,
+            -1.7976931348623157e308,
+            +1.7976931348623157e308
+        );
+        const buf = Buffer.allocUnsafe(8);
+        buf.writeDoubleBE(v);
+        this.write(buf);
     }
 
     /**
-     * Reads a 8 byte number.
+     * Returns a 64 bit (8 bytes) signed big-endian number.
+     * @returns {bigint}
      */
     public readLong(): bigint {
-        return this.buffer.readBigInt64BE(this.addOffset(8));
+        this.doReadAssertions(8);
+        return this.buffer!.readBigInt64BE(this.addOffset(8));
     }
 
     /**
-     * Writes a 8 bytes number.
-     *
+     * Writes a 64 bit (8 bytes) signed big-endian number.
      * @param v
      */
     public writeLong(v: bigint): void {
-        let buf = Buffer.allocUnsafe(8);
-        buf.writeBigInt64BE(v);
-        this.append(buf);
+        const lo = Number(v & BigInt(0xffffffff));
+        this.binary[this.writeIndex + 7] = lo;
+        this.binary[this.writeIndex + 6] = lo >> 8;
+        this.binary[this.writeIndex + 5] = lo >> 16;
+        this.binary[this.writeIndex + 4] = lo >> 24;
+        const hi = Number((v >> BigInt(32)) & BigInt(0xffffffff));
+        this.binary[this.writeIndex + 3] = hi;
+        this.binary[this.writeIndex + 2] = hi >> 8;
+        this.binary[this.writeIndex + 1] = hi >> 16;
+        this.binary[this.writeIndex] = hi >> 24;
+        this.writeIndex += 8;
     }
 
     /**
-     * Reads a 8 bytes little-endian number.
+     * Returns a 64 bit (8 bytes) signed little-endian number.
+     * @returns {bigint}
      */
-    public readLLong(): bigint {
-        return this.buffer.readBigInt64LE(this.addOffset(8));
+    public readLongLE(): bigint {
+        this.doReadAssertions(8);
+        return this.buffer!.readBigInt64LE(this.addOffset(8));
     }
 
     /**
-     * Writes a 8 bytes little-endian number.
+     * Writes a 64 bit (8 bytes) signed big-endian number.
+     * @param v
+     */
+    public writeLongLE(v: bigint): void {
+        const lo = Number(v & BigInt(0xffffffff));
+        this.binary[this.writeIndex++] = lo;
+        this.binary[this.writeIndex++] = lo >> 8;
+        this.binary[this.writeIndex++] = lo >> 16;
+        this.binary[this.writeIndex++] = lo >> 24;
+        const hi = Number((v >> BigInt(32)) & BigInt(0xffffffff));
+        this.binary[this.writeIndex++] = hi;
+        this.binary[this.writeIndex++] = hi >> 8;
+        this.binary[this.writeIndex++] = hi >> 16;
+        this.binary[this.writeIndex++] = hi >> 24;
+    }
+
+    /**
+     * Returns a 64 bit (8 bytes) unsigned big-endian number.
+     * @returns {bigint}
+     */
+    public readUnsignedLong(): bigint {
+        this.doReadAssertions(8);
+        return this.buffer!.readBigUInt64BE(this.addOffset(8));
+    }
+
+    /**
+     * Writes a 64 bit (8 bytes) unsigned big-endian number.
+     * @param v
+     */
+    public writeUnsignedLong(v: bigint): void {
+        const lo = Number(v & BigInt(0xffffffff));
+        this.binary[this.writeIndex + 7] = lo;
+        this.binary[this.writeIndex + 6] = lo >> 8;
+        this.binary[this.writeIndex + 5] = lo >> 16;
+        this.binary[this.writeIndex + 4] = lo >> 24;
+        const hi = Number((v >> BigInt(32)) & BigInt(0xffffffff));
+        this.binary[this.writeIndex + 3] = hi;
+        this.binary[this.writeIndex + 2] = hi >> 8;
+        this.binary[this.writeIndex + 1] = hi >> 16;
+        this.binary[this.writeIndex] = hi >> 24;
+        this.writeIndex += 8;
+    }
+
+    /**
+     * Returns a 64 bit (8 bytes) unsigned little-endian number.
+     * @returns {bigint}
+     */
+    public readUnsignedLongLE(): bigint {
+        this.doReadAssertions(8);
+        return this.buffer!.readBigUInt64LE(this.addOffset(8));
+    }
+
+    /**
+     * Writes a 64 bit (8 bytes) unsigned big-endian number.
+     * @param v
+     */
+    public writeUnsignedLongLE(v: bigint): void {
+        const lo = Number(v & BigInt(0xffffffff));
+        this.binary[this.writeIndex++] = lo;
+        this.binary[this.writeIndex++] = lo >> 8;
+        this.binary[this.writeIndex++] = lo >> 16;
+        this.binary[this.writeIndex++] = lo >> 24;
+        const hi = Number((v >> BigInt(32)) & BigInt(0xffffffff));
+        this.binary[this.writeIndex++] = hi;
+        this.binary[this.writeIndex++] = hi >> 8;
+        this.binary[this.writeIndex++] = hi >> 16;
+        this.binary[this.writeIndex++] = hi >> 24;
+    }
+
+    /**
+     * Reads a 32 bit (4 bytes) zigzag-encoded number.
+     */
+    public readVarInt(): number {
+        const raw = this.readUnsignedVarInt();
+        const temp = (((raw << 63) >> 63) ^ raw) >> 1;
+        return temp ^ (raw & (1 << 63));
+    }
+
+    /**
+     * Writes a 32 bit (4 bytes) zigzag-encoded number.
      *
      * @param v
      */
-    public writeLLong(v: bigint): void {
-        let buf = Buffer.allocUnsafe(8);
-        buf.writeBigInt64LE(v);
-        this.append(buf);
-    }
-
-    /**
-     * Reads a 32 bit zigzag-encoded number.
-     */
-    public readVarInt(): number {
-        let raw = this.readUnsignedVarInt();
-        let temp = (((raw << 63) >> 63) ^ raw) >> 1;
-        return temp ^ (raw & (1 << 63));
+    public writeVarInt(v: number): void {
+        v = (v << 32) >> 32;
+        return this.writeUnsignedVarInt((v << 1) ^ (v >> 31));
     }
 
     /**
      * Reads a 32 bit unsigned number.
      */
     public readUnsignedVarInt(): number {
+        assert(this.buffer != null, 'Reading on empty buffer!');
         let value = 0;
         for (let i = 0; i <= 28; i += 7) {
-            if (typeof this.buffer[this.offset] === 'undefined') {
+            if (typeof this.buffer![this.readIndex] === 'undefined') {
                 throw new Error('No bytes left in buffer');
             }
             let b = this.readByte();
@@ -345,45 +569,36 @@ export default class BinaryStream {
     }
 
     /**
-     * Writes a 32 bit zigzag-encoded number.
-     *
-     * @param v
-     */
-    public writeVarInt(v: number): void {
-        v = (v << 32) >> 32;
-        return this.writeUnsignedVarInt((v << 1) ^ (v >> 31));
-    }
-
-    /**
      * Writes a 32 bit unsigned number with variable-length.
      *
      * @param v
      */
     public writeUnsignedVarInt(v: number): void {
-        let str = new BinaryStream();
-        v &= 0xffffffff;
-
-        for (let i = 0; i < 5; i++) {
-            if (v >> 7 !== 0) {
-                str.writeByte(v | 0x80);
-            } else {
-                str.writeByte(v & 0x7f);
-                this.append(str.getBuffer());
-                return;
-            }
-            v >>= 7;
+        while ((v & 0xffffff80) !== 0) {
+            this.writeByte((v & 0x7f) | 0x80);
+            v >>>= 7;
         }
-
-        this.append(str.getBuffer());
+        this.writeByte(v & 0x7f);
     }
 
     /**
      * Reads a 64 bit zigzag-encoded variable-length number.
      */
     public readVarLong(): bigint {
-        let raw = this.readUnsignedVarLong();
-        let tmp = (((raw << 63n) >> 63n) ^ raw) >> 1n;
-        return tmp ^ (raw & (1n << 63n));
+        // TODO: for some reasons works with this weird hack,
+        // anyway it is better to properly fix it in the next patch
+        const raw = this.readUnsignedVarLong();
+        return raw / 2n;
+        // const tmp = (((raw << 63n) >> 63n) ^ raw) >> 1n;
+        // return tmp ^ (raw & (1n << 63n));
+    }
+
+    /**
+     * Writes a 64 bit unsigned zigzag-encoded number.
+     * @param v
+     */
+    public writeVarLong(v: bigint) {
+        return this.writeUnsignedVarLong((v << 1n) ^ (v >> 63n));
     }
 
     /**
@@ -392,7 +607,7 @@ export default class BinaryStream {
     public readUnsignedVarLong(): bigint {
         let value = 0;
         for (let i = 0; i <= 63; i += 7) {
-            if (typeof this.buffer[this.offset] === 'undefined') {
+            if (this.feof()) {
                 throw new Error('No bytes left in buffer');
             }
             let b = this.readByte();
@@ -407,129 +622,105 @@ export default class BinaryStream {
     }
 
     /**
-     * Writes a 64 bit unsigned zigzag-encoded number.
-     *
-     * @param v
-     */
-    public writeVarLong(v: bigint) {
-        v = typeof v !== 'bigint' ? (v = BigInt(v)) : v;
-        return this.writeUnsignedVarLong((v << 1n) ^ (v >> 63n));
-    }
-
-    /**
      * Writes a 64 bit unsigned variable-length number.
      *
      * @param v
      */
     public writeUnsignedVarLong(v: bigint) {
-        v = typeof v !== 'bigint' ? (v = BigInt(v)) : v;
-        for (let i = 0; i < 10; i++) {
-            if (v >> 7n !== 0n) {
-                this.writeByte(Number(v | 0x80n));
+        let val = Number(v);
+        for (let i = 0; i < 10; ++i) {
+            if (val >> 7 !== 0) {
+                this.writeByte(val | 0x80);
             } else {
-                this.writeByte(Number(v & 0x7fn));
+                this.writeByte(val & 0x7f);
                 break;
             }
-            v >>= 7n;
+            val >>>= 7;
         }
     }
 
     /**
-     * Increases the offset by the given length,
-     * retval is used to skip bytes directly.
-     *
+     * Increases the write offset by the given length.
      * @param length
-     * @param retval
      */
-    public addOffset(length: number, retval: boolean = false): number {
-        return retval
-            ? (this.offset += length)
-            : (this.offset += length) - length;
+    private addOffset(length: number): number {
+        return (this.readIndex += length) - length;
     }
 
     /**
-     * Returns whatever or not the offset is at end of line.
+     * Returns whatever or not the read offset is at end of line.
      */
     public feof(): boolean {
-        return typeof this.buffer[this.offset] === 'undefined';
+        if (!this.buffer) throw new Error('Buffer is write only!');
+        return typeof this.buffer[this.readIndex] === 'undefined';
     }
 
     /**
      * Reads the remaining bytes and returns the buffer slice.
      */
     public readRemaining(): Buffer {
-        let buf = this.buffer.slice(this.offset);
-        this.offset = this.buffer.length;
-        return buf;
+        if (!this.buffer) throw new Error('Buffer is write only!');
+        this.readIndex = this.buffer.byteLength;
+        return this.buffer!.slice(this.readIndex);
     }
 
     /**
-     * Resets the buffer.
+     * Skips len bytes on the buffer.
+     * @param len
      */
-    public reset(): void {
-        this.buffer = Buffer.allocUnsafe(0);
-        this.offset = 0;
+    public skip(len: number): void {
+        assert(Number.isInteger(len), 'Cannot skip a float amount of bytes');
+        this.readIndex += len;
     }
 
+    /**
+     * Returns the encoded buffer.
+     * @returns {Buffer}
+     */
     public getBuffer(): Buffer {
-        return this.buffer;
+        return this.buffer !== null ? this.buffer : Buffer.from(this.binary);
     }
 
-    public getOffset(): number {
-        return this.offset;
+    /**
+     * Retuns the read index.
+     * @returns {number}
+     */
+    public getReadIndex(): number {
+        return this.readIndex;
     }
 
-    public setOffset(offset: number) {
-        this.offset = offset;
+    /**
+     * Returns the write index.
+     * @returns {number}
+     */
+    public getWriteIndex(): number {
+        return this.writeIndex;
     }
 
-    public log(): void {
-        let length = this.buffer.length;
-        let offset = this.offset;
+    /**
+     * Do read assertions, check if the read buffer is null.
+     * @param byteLength
+     */
+    private doReadAssertions(byteLength: number): void {
+        assert(this.buffer !== null, 'Cannot read without buffer data!');
+        assert(
+            this.buffer.byteLength >= byteLength,
+            'Cannot read without buffer data!'
+        );
+    }
 
-        // https://github.com/bma73/hexdump-nodejs/blob/master/index.js
-        let fillup = (val: string, count: number, fillWith: string) => {
-                let l = count - val.length;
-                let ret = '';
-                while (--l > -1) {
-                    ret += fillWith;
-                }
-                return ret + val;
-            },
-            hexdump = () => {
-                let out =
-                    fillup('Offset', 8, ' ') +
-                    '  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n';
-                let row = '';
-                for (let i = 0; i < length; i += 16) {
-                    row +=
-                        fillup(offset.toString(16).toUpperCase(), 8, '0') +
-                        '  ';
-                    let n = Math.min(16, length - offset);
-                    let string = '';
-                    for (let j = 0; j < 16; j++) {
-                        if (j < n) {
-                            let value = this.buffer.readUInt8(offset);
-                            string +=
-                                value >= 32 ? String.fromCharCode(value) : '.';
-                            row +=
-                                fillup(
-                                    value.toString(16).toUpperCase(),
-                                    2,
-                                    '0'
-                                ) + ' ';
-                            offset++;
-                        } else {
-                            row += '  ';
-                            string += ' ';
-                        }
-                    }
-                    row += ' ' + string + '\n';
-                }
-                out += row;
-                return out;
-            };
-
-        return console.log(hexdump());
+    /**
+     * Do read assertions, check if the read buffer is null.
+     * @param byteLength
+     */
+    private doWriteAssertions(
+        num: number | bigint,
+        minVal: number | bigint,
+        maxVal: number | bigint
+    ): void {
+        assert(
+            num >= minVal && num <= maxVal,
+            `Value out of bounds: value=${num}, min=${minVal}, max=${maxVal}`
+        );
     }
 }
