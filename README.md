@@ -1,7 +1,9 @@
 # JSBinaryUtils
+
 https://www.npmjs.com/package/@jsprismarine/jsbinaryutils
 
 ## USE:
+
 ```
 # Yarn
 $ yarn add @jsprismarine/jsbinaryutils
@@ -10,12 +12,13 @@ $ npm i @jsprismarine/jsbinaryutils
 ```
 
 ## Sample code
+
 ```js
-const BinaryStream = require('@jsprismarine/jsbinaryutils').default
+const BinaryStream = require('@jsprismarine/jsbinaryutils').default;
 
-let stream = new BinaryStream()
+let stream = new BinaryStream();
 
-stream.writeByte(1)
+stream.writeByte(1);
 
-console.log(stream.buffer)
+console.log(stream.buffer);
 ```

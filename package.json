@@ -1,12 +1,12 @@
 {
     "name": "@jsprismarine/jsbinaryutils",
-    "version": "2.1.9",
-    "description": "Basic binary managing written in TypeScript.",
+    "version": "3.1.9",
+    "description": "Basic binary data managing tool written in TypeScript.",
     "main": "./dist/BinaryStream.js",
     "types": "./dist/BinaryStream.d.ts",
     "scripts": {
-        "test": "jest --passWithNoTests",
-        "test:watch": "jest --passWithNoTests --watchAll",
+        "test": "jest",
+        "test:watch": "jest --watchAll",
         "prepublishOnly": "npm run test && npm run build",
         "build": "tsc"
     },
@@ -28,9 +28,12 @@
     },
     "homepage": "https://github.com/JSPrismarine/JSBinaryUtils#readme",
     "devDependencies": {
+        "@types/jest": "^27.0.2",
         "@types/node": "14.11.5",
-        "husky": "4.3.0",
-        "jest": "26.5.2",
+        "husky": "^4.3.8",
+        "jest": "^27.3.1",
+        "prettier": "2.4.1",
+        "ts-jest": "^27.0.7",
         "typescript": "4.0.3"
     },
     "husky": {

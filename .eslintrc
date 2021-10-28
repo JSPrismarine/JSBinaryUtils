@@ -1,8 +1,6 @@
 {
     "parser": "babel-eslint",
-    "extends": [
-        "eslint:recommended"
-    ],
+    "extends": ["eslint:recommended"],
     "env": {
         "es6": true,
         "node": true,
@@ -29,10 +27,7 @@
                 "SwitchCase": 1
             }
         ],
-        "semi": [
-            "error",
-            "always"
-        ],
+        "semi": ["error", "always"],
         "brace-style": [
             "error",
             "1tbs",
@@ -40,8 +35,6 @@
                 "allowSingleLine": true
             }
         ],
-        "radix": [
-            "off"
-        ]
+        "radix": ["off"]
     }
 }
