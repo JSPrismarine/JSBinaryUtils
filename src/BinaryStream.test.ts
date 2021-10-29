@@ -339,24 +339,24 @@ describe('Test binary r/w', () => {
 
     it('VarLong', () => {
         const writeStream = new BinaryStream();
-        writeStream.writeVarLong(2000000n);
-        writeStream.writeVarLong(1000000n);
+        writeStream.writeVarLong(422212465606656n);
+        writeStream.writeVarLong(20n);
 
         const readStream = new BinaryStream(writeStream.getBuffer());
-        expect(readStream.readVarLong()).toBe(2000000n);
-        expect(readStream.readVarLong()).toBe(1000000n);
+        expect(readStream.readVarLong()).toBe(422212465606656n);
+        expect(readStream.readVarLong()).toBe(20n);
 
         expect(readStream.readRemaining().byteLength).toBe(0);
     });
 
     it('Unsigned VarLong', () => {
         const writeStream = new BinaryStream();
-        writeStream.writeUnsignedVarLong(-2000000n);
-        writeStream.writeUnsignedVarLong(-1000000n);
+        writeStream.writeUnsignedVarLong(20n);
+        writeStream.writeUnsignedVarLong(10n);
 
         const readStream = new BinaryStream(writeStream.getBuffer());
-        expect(readStream.readUnsignedVarLong()).toBe(-2000000n);
-        expect(readStream.readUnsignedVarLong()).toBe(-1000000n);
+        expect(readStream.readUnsignedVarLong()).toBe(20n);
+        expect(readStream.readUnsignedVarLong()).toBe(10n);
 
         expect(readStream.readRemaining().byteLength).toBe(0);
     });

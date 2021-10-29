@@ -574,12 +574,8 @@ export default class BinaryStream {
      * Reads a 64 bit zigzag-encoded variable-length number.
      */
     public readVarLong(): bigint {
-        // TODO: for some reasons works with this weird hack,
-        // anyway it is better to properly fix it in the next patch
         const raw = this.readUnsignedVarLong();
-        return raw / 2n;
-        // const tmp = (((raw << 63n) >> 63n) ^ raw) >> 1n;
-        // return tmp ^ (raw & (1n << 63n));
+        return raw >> 1n;
     }
 
     /**
@@ -594,16 +590,16 @@ export default class BinaryStream {
      * Reads a 64 bit unsigned variable-length number.
      */
     public readUnsignedVarLong(): bigint {
-        let value = 0;
+        let value = 0n;
         for (let i = 0; i <= 63; i += 7) {
             if (this.feof()) {
                 throw new Error('No bytes left in buffer');
             }
-            let b = this.readByte();
-            value |= (b & 0x7f) << i;
+            const b = this.readByte();
+            value |= (BigInt(b) & 0x7fn) << BigInt(i);
 
             if ((b & 0x80) === 0) {
-                return BigInt(value);
+                return value;
             }
         }
 
@@ -616,15 +612,14 @@ export default class BinaryStream {
      * @param v
      */
     public writeUnsignedVarLong(v: bigint) {
-        let val = Number(v);
         for (let i = 0; i < 10; ++i) {
-            if (val >> 7 !== 0) {
-                this.writeByte(val | 0x80);
+            if (v >> 7n !== 0n) {
+                this.writeByte(Number(v | 0x80n));
             } else {
-                this.writeByte(val & 0x7f);
+                this.writeByte(Number(v & 0x7fn));
                 break;
             }
-            val >>>= 7;
+            v >>= 7n;
         }
     }
 
