@@ -25,6 +25,7 @@ export default class BinaryStream {
      *
      * @param buf
      */
+    public write(buf: Uint8Array): void;
     public write(buf: Buffer): void {
         this.binary.push(...buf);
         this.writeIndex += buf.byteLength;
@@ -336,15 +337,12 @@ export default class BinaryStream {
      * @param v
      */
     public writeFloat(v: number): void {
-        // TODO: IEEE754
         this.doWriteAssertions(
             v,
             -3.4028234663852886e38,
             +3.4028234663852886e38
         );
-        const buf = Buffer.allocUnsafe(4);
-        buf.writeFloatBE(v);
-        this.write(buf);
+        this.write(new Uint8Array(new Float32Array([v]).buffer).reverse());
     }
 
     /**
@@ -361,15 +359,12 @@ export default class BinaryStream {
      * @param v
      */
     public writeFloatLE(v: number): void {
-        // TODO: IEEE754
         this.doWriteAssertions(
             v,
             -3.4028234663852886e38,
             +3.4028234663852886e38
         );
-        const buf = Buffer.allocUnsafe(4);
-        buf.writeFloatLE(v);
-        this.write(buf);
+        this.write(new Uint8Array(new Float32Array([v]).buffer));
     }
 
     /**
@@ -386,15 +381,12 @@ export default class BinaryStream {
      * @param v
      */
     public writeDouble(v: number): void {
-        // TODO: IEE765
         this.doWriteAssertions(
             v,
             -1.7976931348623157e308,
             +1.7976931348623157e308
         );
-        const buf = Buffer.allocUnsafe(8);
-        buf.writeDoubleBE(v);
-        this.write(buf);
+        this.write(new Uint8Array(new Float64Array([v]).buffer).reverse());
     }
 
     /**
@@ -411,15 +403,12 @@ export default class BinaryStream {
      * @param v
      */
     public writeDoubleLE(v: number): void {
-        // TODO: IEE765
         this.doWriteAssertions(
             v,
             -1.7976931348623157e308,
             +1.7976931348623157e308
         );
-        const buf = Buffer.allocUnsafe(8);
-        buf.writeDoubleBE(v);
-        this.write(buf);
+        this.write(new Uint8Array(new Float64Array([v]).buffer));
     }
 
     /**
