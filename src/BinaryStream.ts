@@ -649,8 +649,9 @@ export default class BinaryStream {
      */
     public readRemaining(): Buffer {
         if (!this.buffer) throw new Error('Buffer is write only!');
+        const buf = this.buffer!.slice(this.readIndex);
         this.readIndex = this.buffer.byteLength;
-        return this.buffer!.slice(this.readIndex);
+        return buf;
     }
 
     /**
