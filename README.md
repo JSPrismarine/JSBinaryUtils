@@ -1,5 +1,6 @@
 [![npm](https://img.shields.io/npm/v/@jsprismarine/jsbinaryutils?style=flat-square)](https://www.npmjs.com/package/@jsprismarine/jsbinaryutils)
 [![Dependents (via libraries.io)](https://img.shields.io/librariesio/dependents/npm/@jsprismarine/jsbinaryutils?style=flat-square)](#)
+![npm](https://img.shields.io/npm/dw/@jsprismarine/jsbinaryutils?style=flat-square)
 
 # JSBinaryUtils
 A TypeScript / JavaScript library for managing buffers in a NodeJS app.
