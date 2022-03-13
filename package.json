@@ -1,6 +1,6 @@
 {
     "name": "@jsprismarine/jsbinaryutils",
-    "version": "3.2.2",
+    "version": "3.2.3",
     "description": "Basic binary data managing tool written in TypeScript.",
     "main": "./dist/BinaryStream.js",
     "types": "./dist/BinaryStream.d.ts",
