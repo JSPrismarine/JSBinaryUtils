@@ -1,13 +1,11 @@
 {
     "compilerOptions": {
-        "outDir": "dist",
-        "target": "es2020",
-        "lib": ["dom", "dom.iterable", "es2015", "esnext"],
         "module": "commonjs",
-        "allowJs": true,
+        "target": "es2020",
+        "outDir": "dist",
+        "lib": ["dom", "dom.iterable", "es2015", "esnext"],
         "strict": true,
-        "forceConsistentCasingInFileNames": true,
-        "isolatedModules": false,
+        "moduleResolution": "node",
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "declaration": true,
