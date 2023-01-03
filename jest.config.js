@@ -8,5 +8,10 @@ module.exports = {
     testLocationInResults: true,
     testMatch: ['**/*.(test|spec).(ts|js)'],
     modulePathIgnorePatterns: ignore,
-    coverageReporters: ['json', 'lcov', 'text', 'text-summary']
+    coverageReporters: ['json', 'lcov', 'text', 'text-summary'],
+    globals: {
+        'ts-jest': {
+            tsConfig: 'tsconfig.test.json'
+        }
+    }
 };
