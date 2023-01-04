@@ -1,6 +1,6 @@
 {
     "name": "@jsprismarine/jsbinaryutils",
-    "version": "5.2.3",
+    "version": "5.3.3",
     "description": "Basic binary data managing tool written in TypeScript.",
     "main": "./dist/cjs/BinaryStream.js",
     "module": "./dist/esm/BinaryStream.js",
@@ -13,7 +13,7 @@
         "test": "jest",
         "test:watch": "jest --watchAll",
         "prepublishOnly": "npm run test && npm run build",
-        "build": "tsc --project tsconfig.esm.json & tsc --project tsconfig.cjs.json"
+        "build": "build.sh"
     },
     "files": [
         "dist/**/*"
