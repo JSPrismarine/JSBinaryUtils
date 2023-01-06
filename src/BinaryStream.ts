@@ -31,7 +31,7 @@ export default class BinaryStream {
      */
     public write(buf: Uint8Array): void;
     public write(buf: Buffer): void {
-        this.binary.push(...buf);
+        this.binary = [...this.binary, ...buf];
         this.writeIndex += buf.byteLength;
     }
 
