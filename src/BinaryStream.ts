@@ -677,6 +677,55 @@ export default class BinaryStream {
     }
 
     /**
+     * Sets the buffer for reading.
+     * make sure to reset the reading index!
+     * @param buf - The new Buffer.
+     */
+    public setBuffer(buf: Buffer): void {
+        this.buffer = buf;
+    }
+
+    /**
+     * Clears the whole BinaryStream instance.
+     */
+    public clear(): void {
+        this.buffer = null;
+        this.binary = [];
+        this.readIndex = 0;
+        this.writeIndex = 0;
+    }
+
+    /**
+     * Conventional method to reuse the stream
+     * without having to create a new BinaryStream instance.
+     * @param buf - The new buffer instance.
+     */
+    public reuse(buf: Buffer): void {
+        this.buffer = buf;
+        this.binary = [];
+        this.readIndex = 0;
+        this.writeIndex = 0;
+    }
+
+    /**
+     * Sets the reading index.
+     * @param index - The new read index.
+     */
+    public setReadIndex(index: number): void {
+        assert(index > 0, 'Index must be a positive integer');
+        this.readIndex = index;
+    }
+
+    /**
+     * Sets the new writing index.
+     * @param index - The new write index.
+     */
+    public setWriteIndex(index: number): void {
+        assert(index > 0, 'Index must be a positive integer');
+        this.writeIndex = index;
+    }
+
+    /**
      * Retuns the read index.
      * @returns {number}
      */
