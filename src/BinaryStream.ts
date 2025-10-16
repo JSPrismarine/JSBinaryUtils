@@ -1,10 +1,11 @@
 import assert from 'assert';
 
 export default class BinaryStream {
-    private binary: Array<number> = [];
-    private buffer: Buffer | null = null;
+    private writeBuffer: Buffer | null = null;
+    private readBuffer: Buffer | null = null;
     private readIndex: number;
     private writeIndex = 0;
+    private writeCapacity = 0;
 
     /**
      * Creates a new BinaryStream instance.
@@ -12,7 +13,7 @@ export default class BinaryStream {
      * @param {number} offset - The initial pointer position.
      */
     public constructor(buffer?: Buffer, offset: number = 0) {
-        this.buffer = buffer ?? null; // Keep this instance for reading
+        this.readBuffer = buffer ?? null; // Keep this instance for reading
         this.readIndex = offset;
     }
 
@@ -22,7 +23,10 @@ export default class BinaryStream {
      */
     public read(len: number): Buffer {
         this.doReadAssertions(len);
-        return this.buffer!.slice(this.readIndex, (this.readIndex += len));
+        return this.readBuffer!.subarray(
+            this.readIndex,
+            (this.readIndex += len)
+        );
     }
 
     /**
@@ -31,7 +35,8 @@ export default class BinaryStream {
      */
     public write(buf: Uint8Array): void;
     public write(buf: Buffer): void {
-        this.binary = [...this.binary, ...buf];
+        this.ensureCapacity(buf.byteLength);
+        buf.copy(this.writeBuffer!, this.writeIndex);
         this.writeIndex += buf.byteLength;
     }
 
@@ -41,7 +46,7 @@ export default class BinaryStream {
      */
     public readByte(): number {
         this.doReadAssertions(1);
-        return this.buffer!.readUInt8(this.readIndex++);
+        return this.readBuffer!.readUInt8(this.readIndex++);
     }
 
     /**
@@ -49,8 +54,8 @@ export default class BinaryStream {
      * @param {number} v
      */
     public writeByte(v: number): void {
-        v &= 0xff;
-        this.binary[this.writeIndex++] = v;
+        this.ensureCapacity(1);
+        this.writeBuffer![this.writeIndex++] = v & 0xff;
     }
 
     /**
@@ -59,7 +64,7 @@ export default class BinaryStream {
      */
     public readSignedByte(): number {
         this.doReadAssertions(1);
-        return this.buffer!.readInt8(this.readIndex++);
+        return this.readBuffer!.readInt8(this.readIndex++);
     }
 
     /**
@@ -67,8 +72,9 @@ export default class BinaryStream {
      * @param {number} v
      */
     public writeSignedByte(v: number): void {
-        if (v < 0) v = 0xff + v + 1;
-        this.binary[this.writeIndex++] = v & 0xff;
+        this.ensureCapacity(1);
+        this.writeBuffer![this.writeIndex++] =
+            (v < 0 ? 0xff + v + 1 : v) & 0xff;
     }
 
     /**
@@ -77,7 +83,7 @@ export default class BinaryStream {
      */
     public readBoolean(): boolean {
         this.doReadAssertions(1);
-        return !!this.readByte();
+        return this.readBuffer![this.readIndex++] !== 0;
     }
 
     /**
@@ -85,7 +91,8 @@ export default class BinaryStream {
      * @param {boolean} v
      */
     public writeBoolean(v: boolean): void {
-        this.writeByte(+v);
+        this.ensureCapacity(1);
+        this.writeBuffer![this.writeIndex++] = v ? 1 : 0;
     }
 
     /**
@@ -94,7 +101,7 @@ export default class BinaryStream {
      */
     public readShort(): number {
         this.doReadAssertions(2);
-        return this.buffer!.readInt16BE(this.addOffset(2));
+        return this.readBuffer!.readInt16BE(this.addOffset(2));
     }
 
     /**
@@ -103,8 +110,9 @@ export default class BinaryStream {
      */
     public writeShort(v: number): void {
         this.doWriteAssertions(v, -32_768, 32_767);
-        this.writeByte(v >> 8);
-        this.writeByte(v);
+        this.ensureCapacity(2);
+        this.writeBuffer![this.writeIndex++] = (v >> 8) & 0xff;
+        this.writeBuffer![this.writeIndex++] = v & 0xff;
     }
 
     /**
@@ -113,17 +121,18 @@ export default class BinaryStream {
      */
     public readShortLE(): number {
         this.doReadAssertions(2);
-        return this.buffer!.readInt16LE(this.addOffset(2));
+        return this.readBuffer!.readInt16LE(this.addOffset(2));
     }
 
     /**
-     * Writes a 16 bit (2 bytes) signed big-endian number.
+     * Writes a 16 bit (2 bytes) signed little-endian number.
      * @param {number} v
      */
     public writeShortLE(v: number): void {
         this.doWriteAssertions(v, -32_768, 32_767);
-        this.writeByte(v);
-        this.writeByte(v >> 8);
+        this.ensureCapacity(2);
+        this.writeBuffer![this.writeIndex++] = v & 0xff;
+        this.writeBuffer![this.writeIndex++] = (v >> 8) & 0xff;
     }
 
     /**
@@ -132,7 +141,7 @@ export default class BinaryStream {
      */
     public readUnsignedShort(): number {
         this.doReadAssertions(2);
-        return this.buffer!.readUInt16BE(this.addOffset(2));
+        return this.readBuffer!.readUInt16BE(this.addOffset(2));
     }
 
     /**
@@ -141,8 +150,9 @@ export default class BinaryStream {
      */
     public writeUnsignedShort(v: number): void {
         this.doWriteAssertions(v, 0, 65_535);
-        this.writeByte(v >>> 8);
-        this.writeByte(v);
+        this.ensureCapacity(2);
+        this.writeBuffer![this.writeIndex++] = (v >>> 8) & 0xff;
+        this.writeBuffer![this.writeIndex++] = v & 0xff;
     }
 
     /**
@@ -151,7 +161,7 @@ export default class BinaryStream {
      */
     public readUnsignedShortLE(): number {
         this.doReadAssertions(2);
-        return this.buffer!.readUInt16LE(this.addOffset(2));
+        return this.readBuffer!.readUInt16LE(this.addOffset(2));
     }
 
     /**
@@ -160,8 +170,9 @@ export default class BinaryStream {
      */
     public writeUnsignedShortLE(v: number): void {
         this.doWriteAssertions(v, 0, 65_535);
-        this.writeByte(v);
-        this.writeByte(v >>> 8);
+        this.ensureCapacity(2);
+        this.writeBuffer![this.writeIndex++] = v & 0xff;
+        this.writeBuffer![this.writeIndex++] = (v >>> 8) & 0xff;
     }
 
     /**
@@ -170,7 +181,7 @@ export default class BinaryStream {
      */
     public readTriad(): number {
         this.doReadAssertions(3);
-        return this.buffer!.readIntBE(this.addOffset(3), 3);
+        return this.readBuffer!.readIntBE(this.addOffset(3), 3);
     }
 
     /**
@@ -179,9 +190,10 @@ export default class BinaryStream {
      */
     public writeTriad(v: number): void {
         this.doWriteAssertions(v, -8_388_608, 8_388_607);
-        this.writeByte((v & 0xff0000) >> 16); // msb
-        this.writeByte((v & 0x00ff00) >> 8); // mib
-        this.writeByte(v & 0x0000ff); // lsb
+        this.ensureCapacity(3);
+        this.writeBuffer![this.writeIndex++] = (v >> 16) & 0xff;
+        this.writeBuffer![this.writeIndex++] = (v >> 8) & 0xff;
+        this.writeBuffer![this.writeIndex++] = v & 0xff;
     }
 
     /**
@@ -190,7 +202,7 @@ export default class BinaryStream {
      */
     public readTriadLE(): number {
         this.doReadAssertions(3);
-        return this.buffer!.readIntLE(this.addOffset(3), 3);
+        return this.readBuffer!.readIntLE(this.addOffset(3), 3);
     }
 
     /**
@@ -199,9 +211,10 @@ export default class BinaryStream {
      */
     public writeTriadLE(v: number): void {
         this.doWriteAssertions(v, -8_388_608, 8_388_607);
-        this.writeByte(v & 0x0000ff);
-        this.writeByte((v & 0x00ff00) >> 8);
-        this.writeByte((v & 0xff0000) >> 16);
+        this.ensureCapacity(3);
+        this.writeBuffer![this.writeIndex++] = v & 0xff;
+        this.writeBuffer![this.writeIndex++] = (v >> 8) & 0xff;
+        this.writeBuffer![this.writeIndex++] = (v >> 16) & 0xff;
     }
 
     /**
@@ -210,7 +223,7 @@ export default class BinaryStream {
      */
     public readUnsignedTriad(): number {
         this.doReadAssertions(3);
-        return this.buffer!.readUIntBE(this.addOffset(3), 3);
+        return this.readBuffer!.readUIntBE(this.addOffset(3), 3);
     }
 
     /**
@@ -219,9 +232,10 @@ export default class BinaryStream {
      */
     public writeUnsignedTriad(v: number): void {
         this.doWriteAssertions(v, 0, 16_777_215);
-        this.writeByte((v & 0xff0000) >>> 16); // msb
-        this.writeByte((v & 0x00ff00) >>> 8); // mib
-        this.writeByte(v & 0x0000ff); // lsb
+        this.ensureCapacity(3);
+        this.writeBuffer![this.writeIndex++] = (v >>> 16) & 0xff;
+        this.writeBuffer![this.writeIndex++] = (v >>> 8) & 0xff;
+        this.writeBuffer![this.writeIndex++] = v & 0xff;
     }
 
     /**
@@ -230,7 +244,7 @@ export default class BinaryStream {
      */
     public readUnsignedTriadLE(): number {
         this.doReadAssertions(3);
-        return this.buffer!.readUIntLE(this.addOffset(3), 3);
+        return this.readBuffer!.readUIntLE(this.addOffset(3), 3);
     }
 
     /**
@@ -239,9 +253,10 @@ export default class BinaryStream {
      */
     public writeUnsignedTriadLE(v: number): void {
         this.doWriteAssertions(v, 0, 16_777_215);
-        this.writeByte(v & 0x0000ff);
-        this.writeByte((v & 0x00ff00) >>> 8);
-        this.writeByte((v & 0xff0000) >>> 16);
+        this.ensureCapacity(3);
+        this.writeBuffer![this.writeIndex++] = v & 0xff;
+        this.writeBuffer![this.writeIndex++] = (v >>> 8) & 0xff;
+        this.writeBuffer![this.writeIndex++] = (v >>> 16) & 0xff;
     }
 
     /**
@@ -250,7 +265,7 @@ export default class BinaryStream {
      */
     public readInt(): number {
         this.doReadAssertions(4);
-        return this.buffer!.readInt32BE(this.addOffset(4));
+        return this.readBuffer!.readInt32BE(this.addOffset(4));
     }
 
     /**
@@ -258,12 +273,10 @@ export default class BinaryStream {
      * @param {number} v
      */
     public writeInt(v: number): void {
-        if (v < 0) v = v & (0xffffffff + v + 1);
         this.doWriteAssertions(v, -2_147_483_648, 2_147_483_647);
-        this.writeByte(v >> 24);
-        this.writeByte(v >> 16);
-        this.writeByte(v >> 8);
-        this.writeByte(v);
+        this.ensureCapacity(4);
+        this.writeBuffer!.writeInt32BE(v, this.writeIndex);
+        this.writeIndex += 4;
     }
 
     /**
@@ -272,7 +285,7 @@ export default class BinaryStream {
      */
     public readIntLE(): number {
         this.doReadAssertions(4);
-        return this.buffer!.readIntLE(this.addOffset(4), 4);
+        return this.readBuffer!.readIntLE(this.addOffset(4), 4);
     }
 
     /**
@@ -280,12 +293,10 @@ export default class BinaryStream {
      * @param {number} v
      */
     public writeIntLE(v: number) {
-        if (v < 0) v = v & (0xffffffff + v + 1);
         this.doWriteAssertions(v, -2_147_483_648, 2_147_483_647);
-        this.writeByte(v);
-        this.writeByte(v >> 8);
-        this.writeByte(v >> 16);
-        this.writeByte(v >> 24);
+        this.ensureCapacity(4);
+        this.writeBuffer!.writeInt32LE(v, this.writeIndex);
+        this.writeIndex += 4;
     }
 
     /**
@@ -294,7 +305,7 @@ export default class BinaryStream {
      */
     public readUnsignedInt(): number {
         this.doReadAssertions(4);
-        return this.buffer!.readUInt32BE(this.addOffset(4));
+        return this.readBuffer!.readUInt32BE(this.addOffset(4));
     }
 
     /**
@@ -303,10 +314,9 @@ export default class BinaryStream {
      */
     public writeUnsignedInt(v: number): void {
         this.doWriteAssertions(v, 0, 4_294_967_295);
-        this.writeByte(v >>> 24);
-        this.writeByte(v >>> 16);
-        this.writeByte(v >>> 8);
-        this.writeByte(v);
+        this.ensureCapacity(4);
+        this.writeBuffer!.writeUInt32BE(v, this.writeIndex);
+        this.writeIndex += 4;
     }
 
     /**
@@ -315,7 +325,7 @@ export default class BinaryStream {
      */
     public readUnsignedIntLE(): number {
         this.doReadAssertions(4);
-        return this.buffer!.readUInt32LE(this.addOffset(4));
+        return this.readBuffer!.readUInt32LE(this.addOffset(4));
     }
 
     /**
@@ -324,10 +334,9 @@ export default class BinaryStream {
      */
     public writeUnsignedIntLE(v: number): void {
         this.doWriteAssertions(v, 0, 4_294_967_295);
-        this.writeByte(v);
-        this.writeByte(v >>> 8);
-        this.writeByte(v >>> 16);
-        this.writeByte(v >>> 24);
+        this.ensureCapacity(4);
+        this.writeBuffer!.writeUInt32LE(v, this.writeIndex);
+        this.writeIndex += 4;
     }
 
     /**
@@ -336,7 +345,7 @@ export default class BinaryStream {
      */
     public readFloat(): number {
         this.doReadAssertions(4);
-        return this.buffer!.readFloatBE(this.addOffset(4));
+        return this.readBuffer!.readFloatBE(this.addOffset(4));
     }
 
     /**
@@ -349,7 +358,9 @@ export default class BinaryStream {
             -3.4028234663852886e38,
             +3.4028234663852886e38
         );
-        this.write(new Uint8Array(new Float32Array([v]).buffer).reverse());
+        this.ensureCapacity(4);
+        this.writeBuffer!.writeFloatBE(v, this.writeIndex);
+        this.writeIndex += 4;
     }
 
     /**
@@ -358,7 +369,7 @@ export default class BinaryStream {
      */
     public readFloatLE(): number {
         this.doReadAssertions(4);
-        return this.buffer!.readFloatLE(this.addOffset(4));
+        return this.readBuffer!.readFloatLE(this.addOffset(4));
     }
 
     /**
@@ -371,7 +382,9 @@ export default class BinaryStream {
             -3.4028234663852886e38,
             +3.4028234663852886e38
         );
-        this.write(new Uint8Array(new Float32Array([v]).buffer));
+        this.ensureCapacity(4);
+        this.writeBuffer!.writeFloatLE(v, this.writeIndex);
+        this.writeIndex += 4;
     }
 
     /**
@@ -380,7 +393,7 @@ export default class BinaryStream {
      */
     public readDouble(): number {
         this.doReadAssertions(8);
-        return this.buffer!.readDoubleBE(this.addOffset(8));
+        return this.readBuffer!.readDoubleBE(this.addOffset(8));
     }
 
     /**
@@ -393,7 +406,9 @@ export default class BinaryStream {
             -1.7976931348623157e308,
             +1.7976931348623157e308
         );
-        this.write(new Uint8Array(new Float64Array([v]).buffer).reverse());
+        this.ensureCapacity(8);
+        this.writeBuffer!.writeDoubleBE(v, this.writeIndex);
+        this.writeIndex += 8;
     }
 
     /**
@@ -402,7 +417,7 @@ export default class BinaryStream {
      */
     public readDoubleLE(): number {
         this.doReadAssertions(8);
-        return this.buffer!.readDoubleLE(this.addOffset(8));
+        return this.readBuffer!.readDoubleLE(this.addOffset(8));
     }
 
     /**
@@ -415,7 +430,9 @@ export default class BinaryStream {
             -1.7976931348623157e308,
             +1.7976931348623157e308
         );
-        this.write(new Uint8Array(new Float64Array([v]).buffer));
+        this.ensureCapacity(8);
+        this.writeBuffer!.writeDoubleLE(v, this.writeIndex);
+        this.writeIndex += 8;
     }
 
     /**
@@ -424,7 +441,7 @@ export default class BinaryStream {
      */
     public readLong(): bigint {
         this.doReadAssertions(8);
-        return this.buffer!.readBigInt64BE(this.addOffset(8));
+        return this.readBuffer!.readBigInt64BE(this.addOffset(8));
     }
 
     /**
@@ -432,16 +449,8 @@ export default class BinaryStream {
      * @param {bigint} v
      */
     public writeLong(v: bigint): void {
-        const lo = Number(v & BigInt(0xffffffff));
-        this.binary[this.writeIndex + 7] = lo;
-        this.binary[this.writeIndex + 6] = lo >> 8;
-        this.binary[this.writeIndex + 5] = lo >> 16;
-        this.binary[this.writeIndex + 4] = lo >> 24;
-        const hi = Number((v >> BigInt(32)) & BigInt(0xffffffff));
-        this.binary[this.writeIndex + 3] = hi;
-        this.binary[this.writeIndex + 2] = hi >> 8;
-        this.binary[this.writeIndex + 1] = hi >> 16;
-        this.binary[this.writeIndex] = hi >> 24;
+        this.ensureCapacity(8);
+        this.writeBuffer!.writeBigInt64BE(v, this.writeIndex);
         this.writeIndex += 8;
     }
 
@@ -451,24 +460,17 @@ export default class BinaryStream {
      */
     public readLongLE(): bigint {
         this.doReadAssertions(8);
-        return this.buffer!.readBigInt64LE(this.addOffset(8));
+        return this.readBuffer!.readBigInt64LE(this.addOffset(8));
     }
 
     /**
-     * Writes a 64 bit (8 bytes) signed big-endian number.
+     * Writes a 64 bit (8 bytes) signed little-endian number.
      * @param {bigint} v
      */
     public writeLongLE(v: bigint): void {
-        const lo = Number(v & BigInt(0xffffffff));
-        this.binary[this.writeIndex++] = lo;
-        this.binary[this.writeIndex++] = lo >> 8;
-        this.binary[this.writeIndex++] = lo >> 16;
-        this.binary[this.writeIndex++] = lo >> 24;
-        const hi = Number((v >> BigInt(32)) & BigInt(0xffffffff));
-        this.binary[this.writeIndex++] = hi;
-        this.binary[this.writeIndex++] = hi >> 8;
-        this.binary[this.writeIndex++] = hi >> 16;
-        this.binary[this.writeIndex++] = hi >> 24;
+        this.ensureCapacity(8);
+        this.writeBuffer!.writeBigInt64LE(v, this.writeIndex);
+        this.writeIndex += 8;
     }
 
     /**
@@ -477,7 +479,7 @@ export default class BinaryStream {
      */
     public readUnsignedLong(): bigint {
         this.doReadAssertions(8);
-        return this.buffer!.readBigUInt64BE(this.addOffset(8));
+        return this.readBuffer!.readBigUInt64BE(this.addOffset(8));
     }
 
     /**
@@ -485,16 +487,8 @@ export default class BinaryStream {
      * @param {bigint} v
      */
     public writeUnsignedLong(v: bigint): void {
-        const lo = Number(v & BigInt(0xffffffff));
-        this.binary[this.writeIndex + 7] = lo;
-        this.binary[this.writeIndex + 6] = lo >> 8;
-        this.binary[this.writeIndex + 5] = lo >> 16;
-        this.binary[this.writeIndex + 4] = lo >> 24;
-        const hi = Number((v >> BigInt(32)) & BigInt(0xffffffff));
-        this.binary[this.writeIndex + 3] = hi;
-        this.binary[this.writeIndex + 2] = hi >> 8;
-        this.binary[this.writeIndex + 1] = hi >> 16;
-        this.binary[this.writeIndex] = hi >> 24;
+        this.ensureCapacity(8);
+        this.writeBuffer!.writeBigUInt64BE(v, this.writeIndex);
         this.writeIndex += 8;
     }
 
@@ -504,24 +498,17 @@ export default class BinaryStream {
      */
     public readUnsignedLongLE(): bigint {
         this.doReadAssertions(8);
-        return this.buffer!.readBigUInt64LE(this.addOffset(8));
+        return this.readBuffer!.readBigUInt64LE(this.addOffset(8));
     }
 
     /**
-     * Writes a 64 bit (8 bytes) unsigned big-endian number.
+     * Writes a 64 bit (8 bytes) unsigned little-endian number.
      * @param {bigint} v
      */
     public writeUnsignedLongLE(v: bigint): void {
-        const lo = Number(v & BigInt(0xffffffff));
-        this.binary[this.writeIndex++] = lo;
-        this.binary[this.writeIndex++] = lo >> 8;
-        this.binary[this.writeIndex++] = lo >> 16;
-        this.binary[this.writeIndex++] = lo >> 24;
-        const hi = Number((v >> BigInt(32)) & BigInt(0xffffffff));
-        this.binary[this.writeIndex++] = hi;
-        this.binary[this.writeIndex++] = hi >> 8;
-        this.binary[this.writeIndex++] = hi >> 16;
-        this.binary[this.writeIndex++] = hi >> 24;
+        this.ensureCapacity(8);
+        this.writeBuffer!.writeBigUInt64LE(v, this.writeIndex);
+        this.writeIndex += 8;
     }
 
     /**
@@ -548,13 +535,13 @@ export default class BinaryStream {
      * @returns {number}
      */
     public readUnsignedVarInt(): number {
-        assert(this.buffer != null, 'Reading on empty buffer!');
+        assert(this.readBuffer != null, 'Reading on empty buffer!');
         let value = 0;
         for (let i = 0; i <= 28; i += 7) {
-            if (typeof this.buffer![this.readIndex] === 'undefined') {
+            if (typeof this.readBuffer![this.readIndex] === 'undefined') {
                 throw new Error('No bytes left in buffer');
             }
-            let b = this.readByte();
+            const b = this.readBuffer![this.readIndex++];
             value |= (b & 0x7f) << i;
 
             if ((b & 0x80) === 0) {
@@ -604,7 +591,7 @@ export default class BinaryStream {
             if (this.feof()) {
                 throw new Error('No bytes left in buffer');
             }
-            const b = this.readByte();
+            const b = this.readBuffer![this.readIndex++];
             value |= (BigInt(b) & 0x7fn) << BigInt(i);
 
             if ((b & 0x80) === 0) {
@@ -632,6 +619,30 @@ export default class BinaryStream {
     }
 
     /**
+     * Ensures write buffer has enough capacity, grows if needed.
+     * @param {number} needed
+     */
+    private ensureCapacity(needed: number): void {
+        const required = this.writeIndex + needed;
+        if (required > this.writeCapacity) {
+            // Initial allocation or growth
+            const newCapacity =
+                this.writeCapacity === 0
+                    ? Math.max(256, required) // Initial: 256 or required size
+                    : Math.max(required, this.writeCapacity << 1); // Growth: 2x
+            const newBuffer = Buffer.allocUnsafe(newCapacity);
+
+            // Copy existing data if any
+            if (this.writeBuffer !== null && this.writeIndex > 0) {
+                this.writeBuffer!.copy(newBuffer, 0, 0, this.writeIndex);
+            }
+
+            this.writeBuffer = newBuffer;
+            this.writeCapacity = newCapacity;
+        }
+    }
+
+    /**
      * Increases the write offset by the given length.
      * @param {number} length
      */
@@ -644,8 +655,8 @@ export default class BinaryStream {
      * @returns {number}
      */
     public feof(): boolean {
-        if (!this.buffer) throw new Error('Buffer is write only!');
-        return typeof this.buffer[this.readIndex] === 'undefined';
+        if (!this.readBuffer) throw new Error('Buffer is write only!');
+        return typeof this.readBuffer[this.readIndex] === 'undefined';
     }
 
     /**
@@ -653,9 +664,9 @@ export default class BinaryStream {
      * @returns {Buffer}
      */
     public readRemaining(): Buffer {
-        if (!this.buffer) throw new Error('Buffer is write only!');
-        const buf = this.buffer!.slice(this.readIndex);
-        this.readIndex = this.buffer.byteLength;
+        if (!this.readBuffer) throw new Error('Buffer is write only!');
+        const buf = this.readBuffer!.subarray(this.readIndex);
+        this.readIndex = this.readBuffer.byteLength;
         return buf;
     }
 
@@ -671,26 +682,68 @@ export default class BinaryStream {
     /**
      * Returns the encoded buffer.
      * @returns {Buffer}
+     * @deprecated
+     * @see getReadBuffer()
+     * @see getWriteBuffer()
      */
     public getBuffer(): Buffer {
-        return this.buffer !== null ? this.buffer : Buffer.from(this.binary);
+        return this.readBuffer !== null
+            ? this.readBuffer
+            : this.writeBuffer!.subarray(0, this.writeIndex);
+    }
+
+    /**
+     * Returns the read buffer if available.
+     * @returns {Buffer}
+     */
+    public getReadBuffer(): Buffer | null {
+        return this.readBuffer;
+    }
+
+    /**
+     * Returns the write buffer.
+     * @returns {Buffer}
+     */
+    public getWriteBuffer(): Buffer {
+        return this.writeBuffer!.subarray(0, this.writeIndex);
     }
 
     /**
      * Sets the buffer for reading.
      * make sure to reset the reading index!
      * @param buf - The new Buffer.
+     * @deprecated
      */
     public setBuffer(buf: Buffer): void {
-        this.buffer = buf;
+        this.readBuffer = buf;
+    }
+
+    /**
+     * Sets the buffer for reading.
+     * @param buf - The new Buffer.
+     * @param rIndex - The new read index (default: 0, pass -1 to keep current).
+     */
+    public setReadBuffer(buf: Buffer, rIndex = 0): void {
+        this.readBuffer = buf;
+        if (rIndex >= 0) this.readIndex = rIndex;
+    }
+
+    /**
+     * Sets the buffer for writing.
+     * @param buf - The new Buffer.
+     * @param wIndex - The new write index (default: 0, pass -1 to keep current).
+     */
+    public setWriteBuffer(buf: Buffer, wIndex = 0): void {
+        this.writeBuffer = buf;
+        if (wIndex >= 0) this.writeIndex = wIndex;
+        this.writeCapacity = buf.byteLength;
     }
 
     /**
      * Clears the whole BinaryStream instance.
      */
     public clear(): void {
-        this.buffer = null;
-        this.binary = [];
+        this.readBuffer = null;
         this.readIndex = 0;
         this.writeIndex = 0;
     }
@@ -701,8 +754,7 @@ export default class BinaryStream {
      * @param buf - The new buffer instance.
      */
     public reuse(buf: Buffer): void {
-        this.buffer = buf;
-        this.binary = [];
+        this.readBuffer = buf;
         this.readIndex = 0;
         this.writeIndex = 0;
     }
@@ -712,7 +764,7 @@ export default class BinaryStream {
      * @param index - The new read index.
      */
     public setReadIndex(index: number): void {
-        assert(index > 0, 'Index must be a positive integer');
+        assert(index >= 0, 'Index must be non-negative');
         this.readIndex = index;
     }
 
@@ -721,7 +773,7 @@ export default class BinaryStream {
      * @param index - The new write index.
      */
     public setWriteIndex(index: number): void {
-        assert(index > 0, 'Index must be a positive integer');
+        assert(index >= 0, 'Index must be non-negative');
         this.writeIndex = index;
     }
 
@@ -746,9 +798,9 @@ export default class BinaryStream {
      * @param {number} byteLength
      */
     private doReadAssertions(byteLength: number): void {
-        assert(this.buffer !== null, 'Cannot read without buffer data!');
+        assert(this.readBuffer !== null, 'Cannot read without buffer data!');
         assert(
-            this.buffer.byteLength >= byteLength,
+            this.readBuffer.byteLength >= byteLength,
             'Cannot read without buffer data!'
         );
     }

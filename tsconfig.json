@@ -3,14 +3,18 @@
         "module": "commonjs",
         "target": "es2020",
         "outDir": "dist",
-        "lib": ["dom", "dom.iterable", "es2015", "esnext"],
+        "lib": ["es2020"],
+        "types": ["node", "jest"],
         "strict": true,
         "moduleResolution": "node",
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "declaration": true,
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true
     },
-    "include": ["./src/BinaryStream.ts", "./src/types"],
+    "include": ["./src/**/*.ts"],
+    "exclude": ["node_modules", "dist"],
     "typeRoots": ["node_modules/@types", "./src/types"]
 }
