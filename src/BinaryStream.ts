@@ -1,6 +1,27 @@
 import assert from 'assert';
 
-export default class BinaryStream {
+/**
+ * A high-performance binary stream for reading and writing binary data.
+ *
+ * Unlike Node.js native buffers which have fixed size, BinaryStream uses dynamic
+ * buffers that grow automatically during write operations. This eliminates the need
+ * for manual resizing or inefficient `Buffer.concat()` calls.
+ *
+ * @example Reading data
+ * ```typescript
+ * const stream = new BinaryStream(buffer);
+ * const value = stream.readInt();
+ * ```
+ *
+ * @example Writing data
+ * ```typescript
+ * const stream = new BinaryStream();
+ * stream.writeInt(42);
+ * stream.writeString("Hello");  // Buffer grows automatically
+ * const buffer = stream.getWriteBuffer();
+ * ```
+ */
+export class BinaryStream {
     private writeBuffer: Buffer | null = null;
     private readBuffer: Buffer | null = null;
     private readIndex: number;
@@ -682,9 +703,7 @@ export default class BinaryStream {
     /**
      * Returns the encoded buffer.
      * @returns {Buffer}
-     * @deprecated
-     * @see getReadBuffer()
-     * @see getWriteBuffer()
+     * @deprecated See {@link getReadBuffer} and {@link getWriteBuffer}.
      */
     public getBuffer(): Buffer {
         return this.readBuffer !== null
@@ -712,7 +731,7 @@ export default class BinaryStream {
      * Sets the buffer for reading.
      * make sure to reset the reading index!
      * @param buf - The new Buffer.
-     * @deprecated
+     * @deprecated See {@link setReadBuffer} and {@link setWriteBuffer}.
      */
     public setBuffer(buf: Buffer): void {
         this.readBuffer = buf;
@@ -822,3 +841,6 @@ export default class BinaryStream {
         );
     }
 }
+
+// Default export for backward compatibility
+export default BinaryStream;

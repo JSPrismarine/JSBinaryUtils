@@ -1,152 +1,126 @@
 [![npm](https://img.shields.io/npm/v/@jsprismarine/jsbinaryutils?style=flat-square)](https://www.npmjs.com/package/@jsprismarine/jsbinaryutils)
 [![Dependents (via libraries.io)](https://img.shields.io/librariesio/dependents/npm/@jsprismarine/jsbinaryutils?style=flat-square)](#)
 ![npm](https://img.shields.io/npm/dw/@jsprismarine/jsbinaryutils?style=flat-square)
+[![Documentation](https://img.shields.io/badge/docs-typedoc-blue?style=flat-square)](https://jsprismarine.github.io/JSBinaryUtils/)
 
 # JSBinaryUtils
-A TypeScript / JavaScript library for managing buffers in a NodeJS app.
-This library has been created to solve the big overhead of resources usage when a project needs to write some new data very often in the same Buffer instance (Buffer.concat will create new Buffers, so it's really bad for the performance of real time applications, and that is why JSBinaryUtils was created).
 
-:warning: This guide is incomplete, please help by contributing! thank you :)
+A high-performance TypeScript library for binary data manipulation in Node.js applications. JSBinaryUtils provides efficient buffer management without the overhead of repeated allocations, making it ideal for real-time applications and network protocols.
 
-- [JSBinaryUtils](#jsbinaryutils)
-	- [Installation](#installation)
-- [API](#api)
-	- [Reading](#reading)
-		- [read(len: number)](#read)
-		- [readByte()](#readbyte)
-		- [readSignedByte()](#readsbyte)
-		- [readBoolean()](#readboolean)
-		- [readShort()](#readshort)
-		- [readShortLE()](#readshortle)
-		- [readUnsignedShort()](#readushort)
-		- [readUnsignedShortLE()](#readushortle)
-		- [readTriad()](#readtriad)
-	- [Writing](#writing)
-		- [write(buffer: Uint8Array | Buffer)](#write)
+## Features
+
+- **Zero-copy operations** - Optimized buffer management with automatic capacity growth
+- **Comprehensive API** - Read/write support for all standard binary data types
+- **Variable-length encoding** - Built-in VarInt and VarLong support
+- **Endianness control** - Big-endian and little-endian operations
+- **Type-safe** - Full TypeScript support with type definitions
+- **Well-tested** - Extensive test coverage
 
 ## Installation
 
-Install by `npm`
-
-```sh
+```bash
 npm install @jsprismarine/jsbinaryutils
 ```
 
-**or** install with `yarn`
+## Quick Start
 
-```sh
-yarn add @jsprismarine/jsbinaryutils
-```
-
-# Api
-
-A BinaryStream instance can be used for reading or for writing but not both at the same time.
-
-## Reading
-
-### <a name="read"></a>read(length: number)
-
-Reads a slice of bytes in the buffer on the stream instance and returns it in a Buffer.
-
-### Usage
+### Reading Binary Data
 
 ```typescript
-import BinaryStream from "@jsprismarine/jsbinaryutils";
+import BinaryStream from '@jsprismarine/jsbinaryutils';
 
-const stream = new BinaryStream(Buffer.from([255, 255, 200, 2]));
-console.log(stream.read(4));  // Buffer < 0xFF 0xFF 0xFF 0xC8 0x02 >
+const buffer = Buffer.from([0xFF, 0x00, 0x7F, 0x80]);
+const stream = new BinaryStream(buffer);
+
+const byte = stream.readByte();           // 255
+const signed = stream.readSignedByte();   // 0
+const short = stream.readShort();         // 32640
 ```
 
-### <a name="readbyte"></a>readByte()
-
-Reads an unsigned byte from the buffer (0 to 255).
-
-### Usage
+### Writing Binary Data
 
 ```typescript
-import BinaryStream from "@jsprismarine/jsbinaryutils";
-
-const stream = new BinaryStream(Buffer.from([0xFF]));
-console.log(stream.readByte());  // 255
-```
-
-### <a name="readsbyte"></a>readSignedByte()
-
-Reads a signed byte from the buffer (-128 to 127).
-
-### Usage
-
-```typescript
-import BinaryStream from "@jsprismarine/jsbinaryutils";
-
-const stream = new BinaryStream(Buffer.from([0x7F]));
-console.log(stream.readSignedByte());  // 127
-```
-
-### <a name="readboolean"></a>readBoolean()
-
-Reads a boolean (1 byte, either true or false).
-Everything that is not 0x00 is true.
-
-### Usage
-
-```typescript
-import BinaryStream from "@jsprismarine/jsbinaryutils";
-
-const stream = new BinaryStream(Buffer.from([0x01]));
-console.log(stream.readBoolean());  // true
-```
-
-### <a name="readshort"></a>readShort()
-
-Reads a signed big-endian short (2 bytes).
-
-### <a name="readshortle"></a>readShortLE()
-
-Reads a signed little-endian short (2 bytes).
-
-### <a name="readushort"></a>readUnsignedShort()
-
-Reads an unsigned big-endian short (2 bytes).
-
-### <a name="readushortle"></a>readUnsignedShortLE()
-
-Reads an unsigned little-endian short (2 bytes).
-
-### <a name="readtriad"></a>readTriad()
-
-Reads a big-endian triad (3 bytes).
-
-### <a name="readtriadle"></a>readTriadLE()
-
-Reads a little-endian triad (3 bytes).
-
-### <a name="readutriad"></a>readUnsignedTriad()
-
-Reads an unsigned big-endian triad (3 bytes).
-
-### <a name="readutriadle"></a>readUnsignedTriadLE()
-
-Reads an unsigned little-endian triad (3 bytes).
-
-### <a name="readint"></a>readInt()
-
-Reads a signed big-endian integer (1 byte, 0 to 255).
-
-todo...
-
-## Writing
-
-### <a name="write"></a>write(buffer: Uint8Array | Buffer)
-
-Concatenates the given buffer with the stream instance one.
-
-### Usage
-
-```typescript
-import BinaryStream from "@jsprismarine/jsbinaryutils";
+import BinaryStream from '@jsprismarine/jsbinaryutils';
 
 const stream = new BinaryStream();
-stream.write(Buffer.from([255, 255, 200, 2]));
-console.log(stream.getBuffer());  // Buffer < 0xFF 0xFF 0xFF 0xC8 0x02 >
+
+stream.writeByte(255);
+stream.writeShort(32640);
+stream.writeVarInt(12345);
+
+const result = stream.getWriteBuffer();
 ```
+
+## API Overview
+
+### Byte Operations
+- `readByte()` / `writeByte(v)` - Unsigned byte (0-255)
+- `readSignedByte()` / `writeSignedByte(v)` - Signed byte (-128 to 127)
+- `readBoolean()` / `writeBoolean(v)` - Boolean value
+
+### Integer Operations
+- `readShort()` / `writeShort(v)` - 16-bit signed integer (BE)
+- `readShortLE()` / `writeShortLE(v)` - 16-bit signed integer (LE)
+- `readUnsignedShort()` / `writeUnsignedShort(v)` - 16-bit unsigned integer (BE)
+- `readInt()` / `writeInt(v)` - 32-bit signed integer (BE)
+- `readUnsignedInt()` / `writeUnsignedInt(v)` - 32-bit unsigned integer (BE)
+
+### Triad Operations (24-bit)
+- `readTriad()` / `writeTriad(v)` - 24-bit signed integer (BE)
+- `readTriadLE()` / `writeTriadLE(v)` - 24-bit signed integer (LE)
+- `readUnsignedTriad()` / `writeUnsignedTriad(v)` - 24-bit unsigned integer (BE)
+
+### Floating Point Operations
+- `readFloat()` / `writeFloat(v)` - 32-bit float (BE)
+- `readFloatLE()` / `writeFloatLE(v)` - 32-bit float (LE)
+- `readDouble()` / `writeDouble(v)` - 64-bit double (BE)
+- `readDoubleLE()` / `writeDoubleLE(v)` - 64-bit double (LE)
+
+### Long Operations (64-bit)
+- `readLong()` / `writeLong(v)` - 64-bit signed BigInt (BE)
+- `readLongLE()` / `writeLongLE(v)` - 64-bit signed BigInt (LE)
+- `readUnsignedLong()` / `writeUnsignedLong(v)` - 64-bit unsigned BigInt (BE)
+
+### Variable-Length Operations
+- `readVarInt()` / `writeVarInt(v)` - 32-bit zigzag-encoded VarInt
+- `readUnsignedVarInt()` / `writeUnsignedVarInt(v)` - 32-bit unsigned VarInt
+- `readVarLong()` / `writeVarLong(v)` - 64-bit zigzag-encoded VarLong
+- `readUnsignedVarLong()` / `writeUnsignedVarLong(v)` - 64-bit unsigned VarLong
+
+### Buffer Operations
+- `read(length)` - Read raw bytes
+- `write(buffer)` - Write raw bytes
+- `skip(length)` - Skip bytes
+- `readRemaining()` - Read all remaining bytes
+- `getReadBuffer()` / `getWriteBuffer()` - Get underlying buffers
+
+### Stream Management
+- `setReadBuffer(buffer, index?)` - Set read buffer
+- `setWriteBuffer(buffer, index?)` - Set write buffer
+- `getReadIndex()` / `setReadIndex(index)` - Manage read position
+- `getWriteIndex()` / `setWriteIndex(index)` - Manage write position
+- `clear()` - Reset stream
+- `reuse(buffer)` - Reuse stream with new buffer
+- `feof()` - Check end of buffer
+
+## Documentation
+
+Full API documentation with detailed method descriptions and examples is available at:
+[https://jsprismarine.github.io/JSBinaryUtils/](https://jsprismarine.github.io/JSBinaryUtils/)
+
+## Performance
+
+JSBinaryUtils uses a dynamic buffer allocation strategy that minimizes memory overhead:
+- Initial allocation: 256 bytes or required size
+- Growth strategy: 2x current capacity when needed
+- No intermediate allocations during writes
+
+This approach significantly outperforms naive `Buffer.concat()` operations in high-throughput scenarios.
+
+## License
+
+ISC
+
+## Contributing
+
+Contributions are welcome. Please open an issue or submit a pull request on [GitHub](https://github.com/JSPrismarine/JSBinaryUtils).
