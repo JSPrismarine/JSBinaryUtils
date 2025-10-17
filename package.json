@@ -23,7 +23,10 @@
         "build:cjs": "tsc --build tsconfig.cjs.json",
         "build:esm": "tsc --build tsconfig.esm.json && node -e \"require('fs').writeFileSync('dist/esm/package.json', '{\\\"type\\\":\\\"module\\\"}')\"",
         "docs": "typedoc",
-        "docs:watch": "typedoc --watch"
+        "docs:watch": "typedoc --watch",
+        "release:patch": "npm version patch && git push && git push --tags",
+        "release:minor": "npm version minor && git push && git push --tags",
+        "release:major": "npm version major && git push && git push --tags"
     },
     "files": [
         "dist/**/*"
