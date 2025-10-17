@@ -26,8 +26,13 @@ jobs:
       - name: Update npm
         run: npm install -g npm@10
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Clean install dependencies
+        run: |
+          rm -rf node_modules
+          npm ci --ignore-scripts
+
+      - name: Run prepare scripts
+        run: npm rebuild
 
       - name: Run linter
         run: npm run lint
@@ -56,8 +61,13 @@ jobs:
       - name: Update npm
         run: npm install -g npm@10
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Clean install dependencies
+        run: |
+          rm -rf node_modules
+          npm ci --ignore-scripts
+
+      - name: Run prepare scripts
+        run: npm rebuild
 
       - name: Run tests
         run: npm test
